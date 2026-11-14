@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ArQiteQ — Junction Doping → QEC</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+:root{
+  --bg:#080808;--bg2:#0f0f0f;--bg3:#141414;--border:#1e1e1e;--border2:#2a2a2a;
+  --orange:#D85A30;--green:#1D9E75;--red:#c0392b;--amber:#BA7517;--purple:#7F77DD;
+  --text:#e8e8e8;--text2:#888;--text3:#444;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;}
+header{border-bottom:1px solid var(--border2);padding:11px 18px;background:var(--bg2);}
+.logo{font-size:12px;font-weight:700;letter-spacing:3px;color:var(--orange);}
+.sub{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px;}
+.app{display:grid;grid-template-columns:270px 1fr;min-height:calc(100vh - 46px);}
+
+/* LEFT — inputs */
+.left{border-right:1px solid var(--border2);background:var(--bg2);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.sec-label{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin:6px 0 2px;}
+.field label{display:block;font-size:8px;color:var(--text2);letter-spacing:1px;margin-bottom:3px;text-transform:uppercase;}
+.field select,.field input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 8px;border-radius:2px;outline:none;}
+.field select:focus,.field input:focus{border-color:var(--orange);}
+.lock{font-size:8px;cursor:pointer;padding:1px 5px;border-radius:2px;border:1px solid var(--border2);float:right;}
+.lock.keep{color:var(--orange);border-color:var(--orange);}
+.lock.opt{color:var(--green);border-color:var(--green);}
+.exbtns{display:flex;gap:4px;}
+.exbtns button{flex:1;padding:6px;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:1px;border-radius:2px;cursor:pointer;}
+.ex-pass{background:rgba(29,158,117,.15);border:1px solid var(--green);color:var(--green);}
+.ex-mod{background:rgba(186,117,23,.15);border:1px solid var(--amber);color:var(--amber);}
+.ex-fail{background:rgba(192,57,43,.15);border:1px solid var(--red);color:var(--red);}
+.run{width:100%;padding:11px;background:var(--orange);color:#fff;border:none;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;border-radius:2px;}
+.run:hover{background:#f06030;}
+
+/* RIGHT — main */
+.right{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border2);}
+.rightcol{display:flex;flex-direction:column;gap:1px;background:var(--border2);}
+.cell{background:var(--bg);padding:14px;}
+.cell-label{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;}
+
+/* stacked lattices (QEC over material) */
+.lat-col{display:flex;flex-direction:column;gap:10px;align-items:center;}
+.lat-block{width:100%;text-align:center;}
+.lat-block .tag{font-size:8px;color:var(--text3);letter-spacing:1px;margin-bottom:3px;}
+svg.lat{width:100%;max-width:260px;}
+
+/* verdict */
+.verdict-wrap{display:flex;flex-direction:column;height:100%;}
+.verdict-big{font-family:'Space Mono',monospace;font-size:40px;font-weight:700;letter-spacing:2px;text-align:center;margin:20px 0 8px;}
+.verdict-big.pass{color:var(--green);} .verdict-big.mod{color:var(--amber);} .verdict-big.fail{color:var(--red);} .verdict-big.wait{color:var(--text3);}
+.verdict-stats{font-size:10px;color:var(--text2);text-align:center;line-height:2;}
+.verdict-stats .hl{color:var(--text);} .verdict-stats .pv{color:var(--green);} .verdict-stats .fv{color:var(--red);}
+
+/* recommendation under verdict */
+.rec{margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:none;}
+.rec-title{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);margin-bottom:6px;}
+.rec-overlay{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.rec-overlay svg{width:130px;}
+.rec-detail{font-size:9px;color:var(--text2);line-height:1.7;flex:1;}
+.rec-detail b{color:var(--text);}
+
+/* output strip */
+.out{grid-column:1/-1;background:var(--bg2);border-top:1px solid var(--border2);padding:12px 16px;}
+.out-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px;}
+.oi{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:7px 9px;}
+.oi .l{font-size:7px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;}
+.oi .v{font-size:11px;font-weight:600;margin-top:2px;}
+.oi .v .ok{color:var(--green);} .oi .v .no{color:var(--red);}
+
+/* gibbs explainer */
+.gibbs-box{grid-column:1/-1;background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:9px 11px;margin-top:8px;font-size:9px;color:var(--text2);line-height:1.7;}
+.gibbs-box b{color:var(--amber);}
+.gibbs-bar{height:10px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px;position:relative;}
+.gibbs-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));}
+  #sampler_svg .doped{transition:fill .06s,r .06s;}
+  #sampler_svg .best{filter:drop-shadow(0 0 3px var(--green));}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">ARQITEQ — JUNCTION DOPING → QEC</div>
+  <div class="sub">material lattice + QEC code → does this chip run error correction? · calibrated to Willow 2024 / AlphaQubit</div>
+</header>
+
+<div class="app">
+
+<!-- LEFT -->
+<div class="left">
+  <div class="sec-label">Qubit & material (what you build)</div>
+  <div class="field"><label>Qubit type <span style="color:var(--text3);font-size:8px">(required — you choose)</span></label>
+    <select id="qubit" onchange="sync()">
+      <optgroup label="── Tier 1 Production ──">
+        <option value="transmon">Transmon (η≈3)</option>
+        <option value="fluxonium">Fluxonium (η≈25)</option>
+      </optgroup>
+      <optgroup label="── Tier 2 Emerging ──">
+        <option value="cat">Cat qubit (η≈500)</option>
+        <option value="kerr_cat">Kerr-cat ★ (η≈100)</option>
+        <option value="tunable_transmon">Tunable Transmon (η≈2.5)</option>
+        <option value="csfq">CSFQ (η≈6)</option>
+        <option value="dual_rail">Dual-Rail Cavity (η≈1)</option>
+        <option value="snailmon">SNAILmon ★ (η≈4)</option>
+      </optgroup>
+      <optgroup label="── Tier 3 Research ──">
+        <option value="zero_pi">0-π qubit (η≈50)</option>
+        <option value="heavy_fluxonium">Heavy Fluxonium (η≈100)</option>
+        <option value="unimon">Unimon ★ (η≈4)</option>
+        <option value="bifluxon">Bifluxon (η≈15)</option>
+        <option value="gatemon">Gatemon (η≈2)</option>
+        <option value="fluxonium_transmon">Fluxonium-Transmon ★ (η≈12)</option>
+        <option value="protected_sc">Protected SC ★ (η≈30)</option>
+      </optgroup>
+    </select></div>
+  <div class="field"><label>Qubit frequency (GHz)</label>
+    <input type="number" id="qubit_freq" value="5.0" min="0.01" max="20" step="0.5" onchange="sync()"/></div>
+  <div class="field"><label>Host material <span style="color:var(--text3);font-size:8px">(required — you choose)</span></label>
+    <select id="host" onchange="sync()">
+      <optgroup label="── Tantalum ──">
+        <option value="tantalum_cap">Ta cap/Nb — T1=300/T2=280μs</option>
+        <option value="tantalum_film">α-Ta — T1=230/T2=249μs</option>
+      </optgroup>
+      <optgroup label="── Aluminium ──">
+        <option value="aluminum_oxide_ald">ALD Al₂O₃ — T1=310/T2=240μs</option>
+        <option value="aluminum_oxide_dolan">AlOx Dolan — T1=270/T2=200μs</option>
+        <option value="aluminum_oxide_manhattan">AlOx Manhattan — T1=280/T2=210μs</option>
+      </optgroup>
+      <optgroup label="── Oxide/nitride ──">
+        <option value="hafnium_oxide">HfOx — T1=180/T2=130μs</option>
+        <option value="zirconium_oxide">ZrO₂ — T1=160/T2=110μs</option>
+        <option value="aluminum_nitride">AlN — T1=200/T2=140μs</option>
+        <option value="titanium_nitride">TiN — T1=150/T2=100μs</option>
+        <option value="silicon_nitride">Si₃N₄ — T1=100/T2=70μs</option>
+        <option value="magnesium_oxide">MgOx — T1=160/T2=110μs</option>
+        <option value="silicon_oxide">SiOx — T1=90/T2=60μs</option>
+        <option value="indium_oxide">InOx — T1=70/T2=45μs</option>
+      </optgroup>
+      <optgroup label="── Niobium ──">
+        <option value="niobium_film">Nb film — T1=50/T2=40μs</option>
+        <option value="niobium_nitride">NbN — T1=30/T2=20μs</option>
+        <option value="nbtio">NbTiN — T1=40/T2=30μs</option>
+        <option value="niobium_titanium">NbTi — T1=40/T2=28μs</option>
+        <option value="niobium_tin">Nb₃Sn — T1=20/T2=12μs</option>
+        <option value="niobium_germanium">Nb₃Ge — T1=15/T2=8μs</option>
+        <option value="niobium_silicide">NbSi — T1=30/T2=20μs</option>
+        <option value="niobium_aluminide">Nb₃Al — T1=20/T2=12μs</option>
+        <option value="niobium_oxide">Nb-NbOx — T1=50/T2=35μs</option>
+      </optgroup>
+      <optgroup label="── Elemental ──">
+        <option value="rhenium">Re — T1=100/T2=80μs</option>
+        <option value="molybdenum_rhenium">MoRe — T1=50/T2=40μs</option>
+        <option value="vanadium">V — T1=30/T2=20μs</option>
+        <option value="vanadium_silicide">V₃Si — T1=20/T2=12μs</option>
+        <option value="molybdenum">Mo — T1=30/T2=20μs</option>
+        <option value="indium_film">In — T1=30/T2=20μs</option>
+        <option value="tin_film">Sn — T1=20/T2=15μs</option>
+        <option value="hafnium">Hf — T1=20/T2=12μs</option>
+        <option value="magnesium_diboride">MgB₂ — T1=20/T2=10μs</option>
+      </optgroup>
+      <optgroup label="── Exotic ──">
+        <option value="granular_aluminum">grAl — T1=23/T2=46μs</option>
+        <option value="amorphous_silicon">aSi — T1=80/T2=55μs</option>
+        <option value="van_der_waals">hBN-vdW — T1=60/T2=40μs</option>
+        <option value="aluminum_on_inas">Al/InAs — T1=10/T2=5μs</option>
+        <option value="nv_diamond">NV diamond — T1=10000/T2=1000μs</option>
+      </optgroup>
+    </select></div>
+  <div class="field"><label>Host surface-oxide region — Vol &amp; SA (the lossy interface that sets T₁)</label>
+    <div id="host_t1t2" style="font-size:8.5px;color:var(--text2);margin:-1px 0 4px">—</div>
+    <div style="font-size:7.5px;color:var(--text3);line-height:1.4;margin-bottom:4px">Metal bulk is lossless; its surface oxide (MA+MS) carries the loss. Larger oxide volume → lower T₁.</div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><div style="font-size:7.5px;color:var(--text3)">Vol μm³</div><input id="hostVol" type="number" value="1000.0" min="0" step="0.1" style="width:100%" onchange="sync()"/></div>
+      <div style="flex:1"><div style="font-size:7.5px;color:var(--text3)">SA μm²</div><input id="hostSA" type="number" value="100000.0" min="0" step="0.1" style="width:100%" onchange="sync()"/></div>
+    </div></div>
+  <div class="field"><label>Substrate (wafer) — bulk loss + dielectric constant per type</label>
+    <select id="substrate" onchange="sync()">
+      <option value="sapphire" selected>Sapphire Al₂O₃ — εr 10, tanδ 5e-7 (Place 2021)</option>
+      <option value="hr_silicon">High-resistivity Si — εr 11.7, tanδ 1e-7 (Q&gt;1.5e7)</option>
+      <option value="fused_silica">Fused silica SiO₂ — εr 3.8, tanδ 3e-6</option>
+      <option value="silicon_std">Standard Si — εr 11.7, tanδ 5e-6</option>
+      <option value="gaas">GaAs — εr 12.9, tanδ 1e-5 (piezo)</option>
+    </select></div>
+  <div class="field"><label>Dopant <span class="lock opt" id="lk_dop" onclick="tog('dop')">🔓optimize</span></label>
+    <select id="dop" onchange="sync()">
+      <option value="none">None</option>
+      <option value="fluorine">Fluorine — 55% TLS↓</option>
+      <option value="nitrogen">Nitrogen — 40% TLS↓</option>
+      <option value="erbium">Erbium — 30% TLS↓</option>
+      <option value="carbon">⚠ Carbon — raises TLS</option>
+    </select></div>
+
+  <div class="field"><label>Chip layer to inspect <span style="color:var(--text3);font-size:8px">(of 8 — drives the stability map)</span></label>
+    <select id="gibbs_layer_sel" onchange="setGibbsLayer(parseInt(this.value))"></select></div>
+
+  <div class="sec-label">QEC target (what you run)</div>
+  <div class="field"><label>QEC code <span style="color:var(--text3);font-size:8px">(required — you choose)</span></label>
+    <select id="code" onchange="sync()">
+      <optgroup label="── Surface family ──">
+        <option value="surface">Surface code (th 1.00%, agnostic)</option>
+        <option value="rotated_surface">Rotated surface (th 1.00%, agnostic)</option>
+        <option value="unrotated_surface">Unrotated surface (th 0.90%, agnostic)</option>
+        <option value="toric">Toric code (th 1.10%, agnostic)</option>
+        <option value="surface_17">Surface-17 (d=3) (th 1.00%, agnostic)</option>
+        <option value="surface_49">Surface-49 (d=5) (th 1.00%, agnostic)</option>
+        <option value="xysurface">XY surface (th 1.80%, low)</option>
+        <option value="clifford_deformed">Clifford-deformed surface (th 1.10%, agnostic)</option>
+        <option value="tailored_surface">Tailored surface (th 1.23%, high)</option>
+      </optgroup>
+      <optgroup label="── XZZX / biased ──">
+        <option value="xzzx">XZZX surface (th 3.00%, high)</option>
+        <option value="xzzx_713">XZZX [[7,1,3]] (th 2.50%, high)</option>
+        <option value="xzzx_kerrcat">XZZX + Kerr-cat (th 6.50%, extreme)</option>
+        <option value="quantum_repetition">Repetition (1D) (th 50.00%, extreme)</option>
+        <option value="repetition_cat">Repetition-cat (th 50.00%, extreme)</option>
+      </optgroup>
+      <optgroup label="── Color codes ──">
+        <option value="color">2D color (6.6.6) (th 0.37%, low)</option>
+        <option value="triangular_color">Triangular color (th 0.37%, low)</option>
+        <option value="color_488">Color 4.8.8 (th 0.35%, low)</option>
+        <option value="color_4612">Color 4.6.12 (th 0.19%, low)</option>
+      </optgroup>
+      <optgroup label="── Subsystem / heavy-hex ──">
+        <option value="heavy_hex">Heavy-Hex (th 0.45%, agnostic)</option>
+        <option value="heavy_hex_tailored">Heavy-Hex tailored (th 0.23%, high)</option>
+        <option value="heavy_hex_xzzx">Heavy-Hex XZZX (th 0.21%, high)</option>
+        <option value="bacon_shor">Bacon-Shor (th 0.20%, high)</option>
+        <option value="bacon_shor_13">Bacon-Shor [[13]] (th 0.20%, high)</option>
+        <option value="subsystem_surface">Subsystem surface (th 0.81%, agnostic)</option>
+      </optgroup>
+      <optgroup label="── Floquet / dynamical ──">
+        <option value="floquet_honeycomb">Floquet honeycomb (th 0.75%, agnostic)</option>
+        <option value="floquet_bacon_shor">Floquet-Bacon-Shor (th 0.66%, high)</option>
+        <option value="ckt_honeycomb">CSS honeycomb (th 0.70%, agnostic)</option>
+      </optgroup>
+      <optgroup label="── Concatenated / small ──">
+        <option value="steane">Steane [[7,1,3]] (th 0.01%, agnostic)</option>
+        <option value="shor_nine">Shor [[9,1,3]] (th 0.01%, agnostic)</option>
+        <option value="five_qubit">[[5,1,3]] perfect (th 0.01%, agnostic)</option>
+        <option value="carbon_1212">[[12,2,4]] carbon (th 0.02%, agnostic)</option>
+      </optgroup>
+      <optgroup label="── Bosonic / cavity ──">
+        <option value="cat_code">Cat code (cavity) (th 1.00%, extreme)</option>
+        <option value="binomial">Binomial code (th 1.20%, agnostic)</option>
+        <option value="gkp">GKP code (th 1.50%, agnostic)</option>
+        <option value="gkp_surface">GKP-surface concat (th 2.00%, agnostic)</option>
+        <option value="dual_rail_code">Dual-rail erasure (th 2.50%, agnostic)</option>
+        <option value="fourlegged_cat">4-legged cat (th 1.10%, extreme)</option>
+      </optgroup>
+    </select></div>
+  <div class="field"><label>Distance d (odd) <span style="color:var(--text3);font-size:8px">(required — you choose)</span></label>
+    <input type="number" id="dist" value="5" min="3" max="25" step="2" onchange="sync()"/></div>
+  <div class="field"><label>Target logical error</label>
+    <input type="number" id="target" value="0.005" min="1e-9" max="0.1" step="any" onchange="sync()"/></div>
+  <div class="field"><label>CZ gates per check (stabilizer weight)</label>
+    <input type="number" id="czweight" value="4" min="2" max="8" step="1" onchange="sync()"/>
+    <div style="font-size:7px;color:var(--text3);margin-top:2px">how many CZ gates sit between init &amp; measure · surface 4 · color 6 · repetition/Bacon-Shor 2</div></div>
+
+  <div class="sec-label">Simulation to run — what xpyq / the QPU computes</div>
+  <div class="field"><label>Quantum simulation <span class="lock opt" id="lk_sim" onclick="tog('sim')">🔓optimize</span></label>
+    <select id="sim" onchange="sync()">
+      <option value="bose_hubbard" selected>Bose-Hubbard (hard-core bosons) — default</option>
+      <option value="frustrated_magnet">Frustrated magnet — Heisenberg (spin-liquid)</option>
+      <option value="hubbard">Electronic structure — Fermi-Hubbard</option>
+      <option value="ising">Transverse-field Ising</option>
+      <option value="heisenberg">Heisenberg chain (1D)</option>
+    </select></div>
+  <div class="field"><label>Simulation size N (qubits) — drives the classical-vs-QPU crossover</label>
+    <input type="number" id="sim_n" value="8" min="2" max="120" step="1" onchange="sync()"/></div>
+
+  <div class="sec-label">Examples</div>
+  <div class="exbtns">
+    <button class="ex-pass" onclick="loadEx('pass')">PASS</button>
+    <button class="ex-mod" onclick="loadEx('mod')">MODERATE</button>
+    <button class="ex-fail" onclick="loadEx('fail')">FAIL</button>
+  </div>
+  <button class="run" onclick="run()">▶ RUN</button>
+</div>
+
+<!-- RIGHT -->
+<div class="right">
+
+  <!-- MIDDLE (unchanged): QEC over material -->
+  <div class="cell">
+    <div class="cell-label">QEC code lattice (top) over material lattice (bottom)</div>
+    <div class="lat-col">
+      <div class="lat-block">
+        <div class="tag" id="qec_tag">QEC stabilizer connectivity</div>
+        <div style="display:flex;gap:10px;font-size:7px;color:var(--text3);margin-bottom:2px">
+          <span style="display:flex;align-items:center;gap:3px"><svg width="9" height="9"><circle cx="4.5" cy="4.5" r="4" fill="#7F77DD" opacity="0.85"/></svg>data qubit</span>
+          <span style="display:flex;align-items:center;gap:3px"><svg width="9" height="9"><rect x="0.5" y="0.5" width="8" height="8" fill="none" stroke="#7F77DD" stroke-width="1.2" transform="rotate(45 4.5 4.5)"/></svg>syndrome (ancilla)</span>
+          <span style="display:flex;align-items:center;gap:3px"><svg width="14" height="5"><line x1="0" y1="2.5" x2="14" y2="2.5" stroke="#7F77DD" stroke-width="1" opacity="0.5"/></svg>stabilizer edge</span>
+        </div>
+        <svg class="lat" id="qec_svg" viewBox="0 0 260 150"></svg>
+        <div class="tag" style="margin-top:8px">Detection interval — adapts to the QEC code type</div>
+        <svg id="synwin" viewBox="0 0 260 60" style="width:100%"></svg>
+        <div id="synwin_cap" style="font-size:7.5px;color:var(--text3);line-height:1.5;margin-top:2px"></div>
+      </div>
+      <div class="lat-block">
+        <div class="tag" id="mat_tag">material doping lattice (3D stack)</div>
+        <div style="display:flex;gap:10px;font-size:7px;color:var(--text3);margin-bottom:2px">
+          <span style="display:flex;align-items:center;gap:3px"><svg width="9" height="9"><circle cx="4.5" cy="4.5" r="4" fill="#3B82F6" opacity="0.7"/></svg>host site</span>
+          <span style="display:flex;align-items:center;gap:3px"><svg width="9" height="9"><circle cx="4.5" cy="4.5" r="4" fill="#E5484D" opacity="0.7"/></svg>dopant site</span>
+          <span style="color:var(--text3);font-style:italic">· click a site to dope it</span>
+        </div>
+        <svg class="lat" id="mat_svg" viewBox="0 0 260 150"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: pipeline output (I-PINN → PINN → QUBO) -->
+  <div class="rightcol">
+
+    <!-- 1 · VERDICT -->
+    <div class="cell">
+      <div class="cell-label">① Verdict <span style="color:var(--text3);font-weight:400;letter-spacing:1px">· I-PINN → PINN → QUBO</span></div>
+      <div class="verdict-wrap">
+        <div class="verdict-big wait" id="verdict">—</div>
+        <div class="verdict-stats" id="vstats">pick inputs and Run, or try an example</div>
+        <div class="rec" id="rec">
+          <div class="rec-title" id="rec_title">✓ A config that WILL pass (QEC + material overlaid):</div>
+          <div class="rec-overlay">
+            <svg id="rec_svg" viewBox="0 0 130 130"></svg>
+            <div class="rec-detail" id="rec_detail"></div>
+          </div>
+        </div>
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:8.5px;color:var(--text3)">QUBO joint search — best in 14.2B</span>
+            <button onclick="runQUBO()" id="qubo_btn" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--green);background:var(--bg3);color:var(--green);cursor:pointer;font-weight:600">▶ search</button>
+          </div>
+          <svg id="qubo_trace" viewBox="0 0 260 46" style="width:100%;height:46px;display:block;margin-top:3px"></svg>
+          <div id="qubo_out" style="font-size:9px;line-height:1.6;color:var(--text2);margin-top:2px">click search — joint vs greedy · target pL ≤ <span id="qubo_tgt">1e-6</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · DOPING PROFILE (I-PINN) -->
+    <div class="cell">
+      <div class="cell-label">Material stability map <span style="color:var(--text3);font-weight:400;letter-spacing:1px">· Gibbs ΔG field</span></div>
+      <div class="lat-block" id="sampler_block">
+        <div class="tag" id="sampler_tag" style="display:flex;justify-content:space-between">
+          <span style="color:var(--text3)">Gibbs ΔG mapped onto the chip layer</span>
+          <span id="sampler_iter" style="color:var(--text3)">idle</span>
+        </div>
+        <svg class="lat" id="sampler_svg" viewBox="0 0 260 150"></svg>
+        <div style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:7.5px;color:var(--text3)">
+          <span>falls apart</span>
+          <div style="flex:1;height:7px;border-radius:4px;background:linear-gradient(90deg,#e5484d,#f5c518,#1D9E75)"></div>
+          <span>stable</span>
+        </div>
+        <div id="sampler_props" style="font-size:8.5px;color:var(--text2);margin-top:5px;line-height:1.65">press Run to see the best doping</div>
+        <div style="font-size:9.5px;font-weight:700;color:var(--text);letter-spacing:0.5px;margin-top:10px">How stable is the material? <span style="font-weight:400;color:var(--text3);font-size:8px">(Gibbs energy ΔG)</span></div>
+        <div style="font-size:7.5px;color:var(--text3);margin:1px 0 4px">a fuller, greener bar means the doped lattice holds together better</div>
+        <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+          <div id="sampler_bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--orange),var(--green));transition:width .1s;border-radius:4px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:7px;color:var(--text3);margin-top:2px"><span>weak / falls apart</span><span>strong / stable →</span></div>
+        <div id="sampler_stats" style="font-size:8px;color:var(--text3);margin-top:3px;min-height:14px;">press Run to see the result</div>
+      </div>
+      <div id="mat_readout" style="font-size:9.5px;color:var(--text2);line-height:1.85;margin-top:8px;border-top:1px solid var(--bg3);padding-top:8px">press Run to see values</div>
+    </div>
+
+    <!-- 3 · SIMULATION OUTPUT -->
+    <div class="cell">
+      <div class="cell-label">③ Simulation output <span style="color:var(--text3);font-weight:400;letter-spacing:1px">· key metrics</span></div>
+      <div id="simbench" style="font-size:11px;line-height:1.8;color:var(--text2)">pick a simulation and Run</div>
+      <svg id="sim_chart" viewBox="0 0 260 72" style="width:100%;margin-top:8px;display:none"></svg>
+    </div>
+
+    <!-- 5 · BENCHMARKS -->
+    <div class="cell">
+      <div class="cell-label">④ Benchmarks <span style="color:var(--text3);font-weight:400;letter-spacing:1px">· I-PINN → PINN → QUBO · CPU vs GPU vs DGX</span></div>
+      <svg id="bench_chart" viewBox="0 0 260 150" style="width:100%"></svg>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// DATA (real measured values from material_properties.py)
+// ════════════════════════════════════════════════════════════════════
+const MAT={
+  tantalum_cap:{label:'Ta cap/Nb',T1:300,T2:280,TLS:0.7,Gf:-1911},
+  aluminum_oxide_ald:{label:'ALD Al₂O₃',T1:310,T2:240,TLS:0.8,Gf:-1582},
+  tantalum_film:{label:'α-Ta',T1:230,T2:249,TLS:0.9,Gf:-1911},
+  aluminum_oxide_dolan:{label:'AlOx Dolan',T1:270,T2:200,TLS:1.2,Gf:-1582},
+  aluminum_oxide_manhattan:{label:'AlOx Manhattan',T1:280,T2:210,TLS:1.0,Gf:-1582},
+  hafnium_oxide:{label:'HfOx',T1:180,T2:130,TLS:1.0,Gf:-1144},
+  zirconium_oxide:{label:'ZrO₂',T1:160,T2:110,TLS:1.1,Gf:-1040},
+  aluminum_nitride:{label:'AlN',T1:200,T2:140,TLS:0.9,Gf:-318},
+  titanium_nitride:{label:'TiN',T1:150,T2:100,TLS:1.3,Gf:-309},
+  silicon_nitride:{label:'Si₃N₄',T1:100,T2:70,TLS:1.5,Gf:-745},
+  magnesium_oxide:{label:'MgOx',T1:160,T2:110,TLS:1.1,Gf:-601},
+  silicon_oxide:{label:'SiOx',T1:90,T2:60,TLS:2.0,Gf:-856},
+  indium_oxide:{label:'InOx',T1:70,T2:45,TLS:2.5,Gf:-295},
+  niobium_film:{label:'Nb film',T1:50,T2:40,TLS:1.5,Gf:-185},
+  niobium_nitride:{label:'NbN',T1:30,T2:20,TLS:0.8,Gf:-237},
+  nbtio:{label:'NbTiN',T1:40,T2:30,TLS:1.0,Gf:-210},
+  niobium_titanium:{label:'NbTi',T1:40,T2:28,TLS:1.2,Gf:-200},
+  niobium_tin:{label:'Nb₃Sn',T1:20,T2:12,TLS:1.4,Gf:-180},
+  niobium_germanium:{label:'Nb₃Ge',T1:15,T2:8,TLS:1.6,Gf:-160},
+  niobium_silicide:{label:'NbSi',T1:30,T2:20,TLS:1.0,Gf:-175},
+  niobium_aluminide:{label:'Nb₃Al',T1:20,T2:12,TLS:1.4,Gf:-190},
+  niobium_oxide:{label:'Nb-NbOx',T1:50,T2:35,TLS:2.0,Gf:-185},
+  rhenium:{label:'Re',T1:100,T2:80,TLS:1.0,Gf:-200},
+  molybdenum_rhenium:{label:'MoRe',T1:50,T2:40,TLS:0.9,Gf:-220},
+  vanadium:{label:'V',T1:30,T2:20,TLS:1.3,Gf:-150},
+  vanadium_silicide:{label:'V₃Si',T1:20,T2:12,TLS:1.5,Gf:-165},
+  molybdenum:{label:'Mo',T1:30,T2:20,TLS:1.3,Gf:-140},
+  indium_film:{label:'In',T1:30,T2:20,TLS:1.4,Gf:-130},
+  tin_film:{label:'Sn',T1:20,T2:15,TLS:1.5,Gf:-120},
+  hafnium:{label:'Hf',T1:20,T2:12,TLS:1.6,Gf:-135},
+  magnesium_diboride:{label:'MgB₂',T1:20,T2:10,TLS:1.7,Gf:-150},
+  granular_aluminum:{label:'grAl',T1:23,T2:46,TLS:1.5,Gf:-1582},
+  amorphous_silicon:{label:'aSi',T1:80,T2:55,TLS:2.5,Gf:-455},
+  van_der_waals:{label:'hBN-vdW',T1:60,T2:40,TLS:1.8,Gf:-254},
+  aluminum_on_inas:{label:'Al/InAs',T1:10,T2:5,TLS:3.0,Gf:-280},
+  nv_diamond:{label:'NV diamond',T1:10000,T2:1000,TLS:0.3,Gf:-395},
+};
+const QUB={
+  transmon:{label:'Transmon',eta:3,freq:5,tier:1},
+  fluxonium:{label:'Fluxonium',eta:25,freq:0.5,tier:1},
+  cat:{label:'Cat qubit',eta:500,freq:6,tier:2},
+  kerr_cat:{label:'Kerr-cat',eta:100,freq:6,tier:2},
+  tunable_transmon:{label:'Tunable Transmon',eta:2.5,freq:5,tier:2},
+  csfq:{label:'CSFQ',eta:6,freq:4,tier:2},
+  dual_rail:{label:'Dual-Rail Cavity',eta:1,freq:6,tier:2},
+  snailmon:{label:'SNAILmon',eta:4,freq:5,tier:2},
+  zero_pi:{label:'0-π qubit',eta:50,freq:0.5,tier:3},
+  heavy_fluxonium:{label:'Heavy Fluxonium',eta:100,freq:0.1,tier:3},
+  unimon:{label:'Unimon',eta:4,freq:5,tier:3},
+  bifluxon:{label:'Bifluxon',eta:15,freq:0.5,tier:3},
+  gatemon:{label:'Gatemon',eta:2,freq:5,tier:3},
+  fluxonium_transmon:{label:'Fluxonium-Transmon',eta:12,freq:2,tier:3},
+  protected_sc:{label:'Protected SC',eta:30,freq:1.5,tier:3},
+};
+const QEC={
+  surface:{label:'Surface code',th:0.01,cy:1.0,bias:'agnostic',shape:'square',note:'Fowler 2012 · Google/IBM transmon'},
+  rotated_surface:{label:'Rotated surface',th:0.01,cy:1.1,bias:'agnostic',shape:'square',note:'Google Willow 2024'},
+  unrotated_surface:{label:'Unrotated surface',th:0.009,cy:1.1,bias:'agnostic',shape:'square',note:'Standard CSS layout'},
+  toric:{label:'Toric code',th:0.011,cy:1.0,bias:'agnostic',shape:'square',note:'Kitaev 1997 · periodic'},
+  surface_17:{label:'Surface-17 (d=3)',th:0.01,cy:1.0,bias:'agnostic',shape:'square',note:'Zuchongzhi/Zurich d=3'},
+  surface_49:{label:'Surface-49 (d=5)',th:0.01,cy:1.0,bias:'agnostic',shape:'square',note:'Sycamore d=5'},
+  xysurface:{label:'XY surface',th:0.018,cy:1.0,bias:'low',shape:'square',note:'Tuckett 2020 · biased'},
+  clifford_deformed:{label:'Clifford-deformed surface',th:0.011,cy:1.0,bias:'agnostic',shape:'square',note:'Dua 2024'},
+  tailored_surface:{label:'Tailored surface',th:0.0123,cy:1.0,bias:'high',shape:'square',note:'Tailored to Z-bias'},
+  xzzx:{label:'XZZX surface',th:0.03,cy:1.0,bias:'high',shape:'square',note:'Bonilla Ataides 2021 · 50% @ ∞ bias'},
+  xzzx_713:{label:'XZZX [[7,1,3]]',th:0.025,cy:1.0,bias:'high',shape:'square',note:'Small XZZX cyclic'},
+  xzzx_kerrcat:{label:'XZZX + Kerr-cat',th:0.065,cy:1.0,bias:'extreme',shape:'square',note:'Darmawan 2021 · pCX 6.5%'},
+  quantum_repetition:{label:'Repetition (1D)',th:0.5,cy:0.5,bias:'extreme',shape:'chain',note:'Bit-flip only · cat qubits'},
+  repetition_cat:{label:'Repetition-cat',th:0.5,cy:0.5,bias:'extreme',shape:'chain',note:'Guillaud-Mirrahimi 2019 · AWS'},
+  color:{label:'2D color (6.6.6)',th:0.0037,cy:1.2,bias:'low',shape:'triangular',note:'Bombin 2006 · Google 2025'},
+  triangular_color:{label:'Triangular color',th:0.0037,cy:1.2,bias:'low',shape:'triangular',note:'Triangular patch'},
+  color_488:{label:'Color 4.8.8',th:0.0035,cy:1.2,bias:'low',shape:'triangular',note:'Square-octagon tiling'},
+  color_4612:{label:'Color 4.6.12',th:0.0019,cy:1.3,bias:'low',shape:'triangular',note:'Truncated trihexagonal'},
+  heavy_hex:{label:'Heavy-Hex',th:0.0045,cy:1.0,bias:'agnostic',shape:'square',note:'Chamberland 2020 · IBM'},
+  heavy_hex_tailored:{label:'Heavy-Hex tailored',th:0.0023,cy:1.0,bias:'high',shape:'square',note:'Kim 2022 · biased on heavy-hex'},
+  heavy_hex_xzzx:{label:'Heavy-Hex XZZX',th:0.0021,cy:1.0,bias:'high',shape:'square',note:'XZZX on heavy-hex'},
+  bacon_shor:{label:'Bacon-Shor',th:0.002,cy:0.8,bias:'high',shape:'square',note:'Aliferis 2007 · subsystem'},
+  bacon_shor_13:{label:'Bacon-Shor [[13]]',th:0.002,cy:0.8,bias:'high',shape:'square',note:'d=3 Bacon-Shor'},
+  subsystem_surface:{label:'Subsystem surface',th:0.0081,cy:1.0,bias:'agnostic',shape:'square',note:'Bravyi subsystem'},
+  floquet_honeycomb:{label:'Floquet honeycomb',th:0.0075,cy:0.7,bias:'agnostic',shape:'triangular',note:'Hastings-Haah 2021'},
+  floquet_bacon_shor:{label:'Floquet-Bacon-Shor',th:0.0066,cy:0.7,bias:'high',shape:'square',note:'Dynamical · 2025 demo'},
+  ckt_honeycomb:{label:'CSS honeycomb',th:0.007,cy:0.7,bias:'agnostic',shape:'triangular',note:'Kesselring 2022'},
+  steane:{label:'Steane [[7,1,3]]',th:0.0001,cy:0.7,bias:'agnostic',shape:'triangular',note:'Steane 1996 · color patch'},
+  shor_nine:{label:'Shor [[9,1,3]]',th:0.0001,cy:0.7,bias:'agnostic',shape:'square',note:'Shor 1995'},
+  five_qubit:{label:'[[5,1,3]] perfect',th:0.0001,cy:0.6,bias:'agnostic',shape:'square',note:'Laflamme 1996 · smallest'},
+  carbon_1212:{label:'[[12,2,4]] carbon',th:0.0002,cy:0.7,bias:'agnostic',shape:'square',note:'Concatenated'},
+  cat_code:{label:'Cat code (cavity)',th:0.01,cy:2.0,bias:'extreme',shape:'cavity',note:'Ofek 2016 · Yale · break-even'},
+  binomial:{label:'Binomial code',th:0.012,cy:2.0,bias:'agnostic',shape:'cavity',note:'Michael 2016 · Hu 2019'},
+  gkp:{label:'GKP code',th:0.015,cy:2.0,bias:'agnostic',shape:'cavity',note:'Campagne-Ibarcq 2020 · Sivak 2023'},
+  gkp_surface:{label:'GKP-surface concat',th:0.02,cy:1.5,bias:'agnostic',shape:'square',note:'GKP + surface concatenation'},
+  dual_rail_code:{label:'Dual-rail erasure',th:0.025,cy:1.2,bias:'agnostic',shape:'cavity',note:'Teoh 2023 · erasure-biased'},
+  fourlegged_cat:{label:'4-legged cat',th:0.011,cy:2.0,bias:'extreme',shape:'cavity',note:'Higher-order cat'},
+};
+const DOP={
+  none:{label:'none',sup:0,pct:0},
+  nitrogen:{label:'N',sup:0.4,pct:12},
+  fluorine:{label:'F',sup:0.55,pct:8},
+  erbium:{label:'Er',sup:0.3,pct:6},
+  yttrium:{label:'Y',sup:0.25,pct:5},
+  lanthanum:{label:'La',sup:0.2,pct:4},
+  hydrogen:{label:'H',sup:0.2,pct:5},
+  silicon_dop:{label:'Si',sup:-0.1,pct:3},
+  titanium_dop:{label:'Ti',sup:0.05,pct:4},
+  oxygen_dop:{label:'O',sup:0.1,pct:8},
+  carbon:{label:'C',sup:-0.1,pct:3},
+  sulfur:{label:'S',sup:-0.15,pct:2},
+};
+const LAYER2={none:null,
+  below_tantalum:{label:'L2 α-Ta',pos:'below',iTLS:0.06},
+  below_aluminum:{label:'L2 Al',pos:'below',iTLS:0.08},
+  below_niobium:{label:'L2 Nb',pos:'below',iTLS:0.14},
+  below_tin:{label:'L2 TiN',pos:'below',iTLS:0.10},
+  above_aluminum:{label:'L4 Al',pos:'above',iTLS:0.08},
+  above_tantalum:{label:'L4 Ta',pos:'above',iTLS:0.06},
+  above_niobium:{label:'L4 Nb',pos:'above',iTLS:0.14},
+  above_grAl:{label:'L4 grAl',pos:'above',iTLS:0.12}};
+const GATE=0.001;
+// Entangling gate / circuit (2q Pauli errors + couplers/qubit) — from Eickbusch et al., Nat. Phys. 2025
+const GATES={
+  standard_cz:{label:'Standard (square, CZ)', gateErr:0.0024, couplers:4, lam:2.14},
+  hexagonal_cz:{label:'Hexagonal (CZ)',        gateErr:0.0024, couplers:3, lam:2.15},
+  walking_cz:{label:'Walking (CZ)',            gateErr:0.0036, couplers:4, lam:1.69},
+  iswap:{label:'iSWAP',                        gateErr:0.0043, couplers:4, lam:1.56},
+};
+// Device geometry presets — volume (µm³), surface area (µm²), surface participation pSurf, and the
+// resulting T1 factor (T1 ∝ 1/pSurf, Wang et al. APL 2015). Numbers representative of each cited geometry.
+const GEOM={
+  compact_idc:{label:'Compact interdigitated (high participation)', vol:3.8e2, sa:3.0e3, pSurf:2.0e-3, t1f:0.5, paper:'Wang 2015 (small-pitch IDC)'},
+  planar_std:{ label:'Standard planar pad',                          vol:1.35e4, sa:1.9e5, pSurf:1.0e-3, t1f:1.0, paper:'Wang 2015 (planar baseline)'},
+  large_pad:{  label:'Large separated pads (Ta)',                    vol:3.8e4, sa:5.2e5, pSurf:5.0e-4, t1f:2.0, paper:'Place 2021 (Ta, T1>0.3 ms)'},
+  shape_opt:{  label:'Shape-optimized pads',                         vol:1.6e4, sa:1.6e5, pSurf:8.0e-4, t1f:1.22, paper:'Kim 2022 (spline-optimized, +21.6% T1)'},
+  cavity_3d:{  label:'3D cavity transmon (lowest participation)',    vol:1.0e6, sa:6.0e6, pSurf:1.5e-4, t1f:5.0, paper:'Wang 2015 (3D cQED)'},
+};
+// Substrate presets — bulk dielectric loss tan δ, dielectric constant εr, substrate participation pSub,
+// participating volume (µm³) & surface area (µm²) (scale with εr), and resulting T1 factor (T1 ∝ 1/(pSub·tanδ)).
+const SUBSTRATE={
+  sapphire:{    label:'Sapphire (Al₂O₃)',       er:10.0, tanD:5e-7, pSub:0.70, vol:9.0e6,  sa:9.0e4, t1f:1.00, paper:'Place 2021 (Ta on sapphire)'},
+  hr_silicon:{  label:'High-resistivity Si',     er:11.7, tanD:1e-7, pSub:0.60, vol:1.05e7, sa:1.0e5, t1f:1.40, paper:'HR-Si, Q>1.5×10⁷'},
+  fused_silica:{label:'Fused silica (SiO₂)',     er:3.8,  tanD:3e-6, pSub:0.55, vol:3.4e6,  sa:5.0e4, t1f:0.60, paper:'amorphous SiO₂ (TLS-rich)'},
+  silicon_std:{ label:'Standard-resistivity Si', er:11.7, tanD:5e-6, pSub:0.60, vol:1.05e7, sa:1.0e5, t1f:0.50, paper:'free-carrier loss'},
+  gaas:{        label:'GaAs (piezoelectric)',    er:12.9, tanD:1e-5, pSub:0.70, vol:1.16e7, sa:1.05e5,t1f:0.30, paper:'piezoelectric loss'},
+};
+// Lossy dielectric layers — the ONLY regions where volume/surface area enter T1 (participation model).
+// Host surface-oxide region (MA+MS interface) — the lossy part of the metal that sets T1.
+// fOx = its fractional contribution to 1/T1; vol0 = default oxide volume (neutral point).
+const HOSTOX={ fOx:0.5, vol0:1000, sa0:1.0e5 };
+
+const LOCK={qubit:true,host:true,dop:false,code:true,dist:true,sim:false};
+
+// ════════════════════════════════════════════════════════════════════
+// PHYSICS (verified calibration — clean tier separation)
+// ════════════════════════════════════════════════════════════════════
+function coherence(hk,dk,tempChipMK,freqGHz,l2k){
+  const m=MAT[hk],d=DOP[dk];
+  const f=Math.max(0.25,1-d.sup);          // dopant lowers effective TLS
+  // ── Gibbs → TLS → coherence link (the physical connection) ──
+  const G=gibbs(hk,dk);
+  const stabilityFactor = Math.max(0.5, Math.min(1.0, 0.5 + (-G-200)/1600));
+  // Chip temperature factor: warmer = more thermal excitation = shorter coherence.
+  const kB=8.617e-5, hf=6.626e-34*(freqGHz||5)*1e9/1.602e-19;
+  const tK=Math.max(tempChipMK||15,1)/1000;
+  const thermal=Math.tanh(hf/(2*kB*tK));   // ~1 when cold, drops when warm
+  const tempFactor=Math.max(0.5,thermal);
+  // ── 2nd-layer interface factor (R4d) ──
+  // The buried interface between Layer 3 and the adjacent layer carries TLS.
+  // A clean interface (Ta, iTLS 0.06) barely hurts; a lossy one (Nb, 0.14)
+  // adds a real coherence penalty. None = no second interface = factor 1.
+  const l2 = (l2k && LAYER2[l2k]) ? LAYER2[l2k] : null;
+  const ifaceFactor = l2 ? Math.max(0.6, 1 - (l2.iTLS-0.06)*3) : 1.0;
+  const coh = tempFactor*stabilityFactor*ifaceFactor;
+  const T1=Math.min(m.T1/f, m.T1*1.25)*coh;
+  const T2=Math.min(m.T2/f, T1*0.95, m.T2*1.25)*coh;
+  return {T1,T2,stabilityFactor,ifaceFactor};
+}
+function stackFloor(hemtK, filterMK){
+  const base=GATE;
+  const hemtPenalty = Math.max(0,(hemtK-4)/4)*0.0005;
+  const filterPenalty = Math.max(0,(filterMK-100)/800)*0.0008;
+  return base + hemtPenalty + filterPenalty;
+}
+function physErr(T1,T2,ck,floor){const c=QEC[ck];return c.cy/T1 + c.cy/(2*T2) + (floor||GATE);}
+function logicalErr(p,th,d){
+  const r=p/th;
+  if(r<1){const e=Math.floor(d/2)+1;return 0.01*Math.pow(r,e);}  // Fowler/Willow
+  return Math.min(0.5,0.3*Math.pow(r,1.2));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// GNN DECODER (AlphaQubit-style, geometry-aware) — R17
+// AlphaQubit (Bausch 2024) is a learned decoder that beats MWPM by adapting
+// to the actual noise. We model a graph-neural-network decoder operating ON
+// the code's connectivity graph (qecNodes): it passes messages between
+// neighbouring stabilizers, so its accuracy gain depends on the geometry's
+// connectivity degree and how well it exploits the noise bias.
+//   - higher connectivity (square deg-4) → more neighbour info → bigger gain
+//   - biased noise (high η) → GNN learns the structure → extra gain
+// Result: a multiplicative reduction in logical error vs plain MWPM.
+// ════════════════════════════════════════════════════════════════════
+function gnnDecode(pL_mwpm, ck, eta){
+  const shape=QEC[ck].shape;
+  // base GNN gain over MWPM (AlphaQubit: ~1.35× at distance 11)
+  let gain = 1.35;
+  // connectivity bonus: square (deg-4) gives the GNN more message-passing edges
+  if(shape==='square') gain += 0.15;
+  else if(shape==='triangular') gain += 0.08;
+  else if(shape==='cavity') gain += 0.20;   // bosonic soft-info decoding helps most
+  else if(shape==='chain') gain += 0.03;
+  // bias bonus: GNN learns biased-noise structure (more η = more to exploit)
+  gain += Math.min(0.5, (eta-1)/40);
+  const pL_gnn = pL_mwpm / gain;
+  return { pL_gnn, gain };
+}
+
+function gibbs(hk,dk){
+  const m=MAT[hk],d=DOP[dk];
+  const alpha=d.pct/100;
+  const Hmix = (d.sup>0? -8*d.sup : -d.sup*40) * alpha*(1-alpha)*100;
+  return m.Gf + Hmix;
+}
+function biasOK(qk,ck){
+  const need=QEC[ck].bias, eta=QUB[qk].eta;
+  if(need==='agnostic') return true;
+  if(need==='high') return eta>=5;
+  if(need==='extreme') return eta>=50;
+  if(need==='low') return eta<=8;
+  return true;
+}
+function evaluate(qk,hk,dk,ck,d,opts){
+  opts=opts||{};
+  const tempChip=opts.tempChip!=null?opts.tempChip:15;
+  const freq=opts.freq!=null?opts.freq:(QUB[qk]?QUB[qk].freq:5);
+  const hemt=opts.hemt!=null?opts.hemt:4;
+  const filter=opts.filter!=null?opts.filter:100;
+  const l2k=opts.layer2||'none';
+  let {T1,T2,stabilityFactor,ifaceFactor}=coherence(hk,dk,tempChip,freq,l2k);
+  const GM=GEOM[opts.geom||'planar_std']||GEOM.planar_std;  // geometry → surface participation → T1
+  const SB=SUBSTRATE[opts.substrate||'sapphire']||SUBSTRATE.sapphire; // substrate → bulk loss → T1
+  T1=T1*GM.t1f*SB.t1f; T2=Math.min(T2*GM.t1f*SB.t1f, 2*T1); // T1 ∝ 1/(pSurf · pSub·tanδ); T2 ≤ 2·T1
+  // ── Host surface-oxide participation (user Vol/SA) ──
+  // Metal bulk is lossless; its surface oxide (MA+MS) carries loss. 1/T1 gains a
+  // term ∝ oxide volume. lossMult = (1-fOx) + fOx·(vol/vol0); = 1 at default (non-breaking).
+  const hv = opts.hostVol!=null?opts.hostVol:HOSTOX.vol0;
+  const lossMult = Math.max(0.1, (1-HOSTOX.fOx) + HOSTOX.fOx*(hv/HOSTOX.vol0));
+  T1=T1/lossMult; T2=Math.min(T2/lossMult, 2*T1);
+  const G=GATES[opts.gate||'standard_cz']||GATES.standard_cz;
+  const wt=opts.weight||4;                                // CZ gates per check (stabilizer weight)
+  const gateErr=G.gateErr*(wt/4);                         // more gates in the detection window → more error
+  const roFloor=stackFloor(hemt,filter);
+  const floor=roFloor+gateErr;
+  const p=physErr(T1,T2,ck,floor), th=QEC[ck].th;
+  const relaxErr=QEC[ck].cy/T1, dephErr=QEC[ck].cy/(2*T2);  // budget components
+  const below=p<th;
+  const pL=logicalErr(p,th,d);                       // MWPM baseline
+  const eta=QUB[qk]?QUB[qk].eta:3;
+  const {pL_gnn,gain}=gnnDecode(pL,ck,eta);          // GNN-decoded (R17)
+  const compatible=biasOK(qk,ck);
+  // Λ35 error-suppression factor (Eickbusch 2025): p_L(d=3)/p_L(d=5)
+  const pl3=gnnDecode(logicalErr(p,th,3),ck,eta).pL_gnn;
+  const pl5=gnnDecode(logicalErr(p,th,5),ck,eta).pL_gnn;
+  const lambda35 = pl5>0 ? pl3/pl5 : 1;
+  return {T1,T2,p,th,below,pL,pL_gnn,gnnGain:gain,compatible,Gf:gibbs(hk,dk),stabilityFactor,ifaceFactor,
+          relaxErr,dephErr,gateErr,roFloor,couplers:G.couplers,gate:(opts.gate||'standard_cz'),lambda35,weight:wt,geom:(opts.geom||'planar_std'),substrate:(opts.substrate||'sapphire'),lossMult};
+}
+function tierOf(e,target){
+  if(!e.compatible) return 'FAIL';
+  // Use the GNN-decoded logical error (R17) — the best the chip can achieve.
+  // Below threshold is still the necessary condition (no decoder fixes that).
+  const pL = e.pL_gnn!=null ? e.pL_gnn : e.pL;
+  if(e.below && pL < target/3) return 'PASS';
+  if(e.below && pL < target) return 'MODERATE';
+  return 'FAIL';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LATTICE DRAWING — QEC (top) shows code structure, material (bottom) shows doping
+// ════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// ACCURATE QEC GEOMETRY — each code's true physical layout.
+// ALL THREE VIEWS (QEC lattice, material lattice, sampler) call this
+// function and use identical node positions — they are the same qubits.
+// Coords normalised to [0.05..0.95] so they fit the SVG viewBox.
+// ════════════════════════════════════════════════════════════════════
+function qecNodes(ck,d){
+  const nodes=[],edges=[];
+  const add=(x,y,r)=>{nodes.push({x,y,role:r});return nodes.length-1;};
+  const link=(a,b)=>{if(a!=null&&b!=null&&a!==b)edges.push([a,b]);};
+  const shape=QEC[ck]?QEC[ck].shape:'square';
+  const dd=Math.min(Math.max(d,3),7);
+
+  // ─── helper: normalise all node coords to [pad..1-pad] ───
+  function normalise(pad=0.06){
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    nodes.forEach(n=>{if(n.x<minX)minX=n.x;if(n.x>maxX)maxX=n.x;if(n.y<minY)minY=n.y;if(n.y>maxY)maxY=n.y;});
+    const span=Math.max(maxX-minX,maxY-minY,0.001);
+    nodes.forEach(n=>{n.x=pad+(n.x-minX)/span*(1-2*pad);n.y=pad+(n.y-minY)/span*(1-2*pad);});
+  }
+
+  if(shape==='triangular'){
+    // ── EXACT 6.6.6 triangular color-code patch ──
+    // Data qubits at axial hex-grid vertices inside an equilateral triangle.
+    // Syndrome qubits at incentres of each triangular face.
+    const S=Math.sqrt(3);
+    const map={};
+    for(let r=0;r<dd;r++) for(let q=0;q<dd-r;q++){
+      // axial → cartesian hex: x = q + r*0.5, y = r*sqrt(3)/2
+      map[`${q},${r}`]=add(q+r*0.5, r*S/2, 'data');
+    }
+    // syndromes at face centres
+    for(let r=0;r<dd-1;r++) for(let q=0;q<dd-r-1;q++){
+      // upward triangle (q,r)(q+1,r)(q,r+1)
+      const a=map[`${q},${r}`],b=map[`${q+1},${r}`],c=map[`${q},${r+1}`];
+      if(a!=null&&b!=null&&c!=null){
+        const sx=(nodes[a].x+nodes[b].x+nodes[c].x)/3;
+        const sy=(nodes[a].y+nodes[b].y+nodes[c].y)/3;
+        const s=add(sx,sy,'syn');
+        link(s,a);link(s,b);link(s,c);
+      }
+      // downward triangle (q+1,r)(q+1,r-1)(q+1,r+1) — only if q>0 gives interior
+      if(q+1<=dd-r-1){
+        const pa=map[`${q+1},${r}`],pb=map[`${q},${r+1}`],pc=map[`${q+1},${r}`];
+        const da=map[`${q+1},${r}`],db=map[`${q},${r+1}`],dc=map[`${q+1},${r+1}`];
+        if(da!=null&&db!=null&&dc!=null){
+          const sx=(nodes[da].x+nodes[db].x+nodes[dc].x)/3;
+          const sy=(nodes[da].y+nodes[db].y+nodes[dc].y)/3;
+          const s=add(sx,sy,'syn');
+          link(s,da);link(s,db);link(s,dc);
+        }
+      }
+    }
+    normalise(0.07);
+
+  } else if(shape==='chain'){
+    // ── EXACT 1D REPETITION CHAIN ──
+    const m=Math.min(2*dd-1,13);
+    let prev=null;
+    for(let k=0;k<m;k++){
+      const id=add(k/(m-1), 0.5, k%2===0?'data':'syn');
+      if(prev!=null) link(prev,id);
+      prev=id;
+    }
+    normalise(0.05);
+
+  } else if(shape==='cavity'){
+    // ── BOSONIC CAVITY — concentric Fock-state shells ──
+    // Centre mode + rings of photon-number states
+    const center=add(0.5,0.5,'data');
+    const shells=Math.min(dd,5);
+    for(let ring=1;ring<=shells;ring++){
+      const n=ring*6, rad=ring/(shells+1)*0.45;
+      for(let k=0;k<n;k++){
+        const ang=2*Math.PI*k/n - Math.PI/2;
+        const id=add(0.5+rad*Math.cos(ang), 0.5+rad*Math.sin(ang), ring%2?'syn':'data');
+        link(center,id);
+        // connect adjacent nodes in the ring
+        if(k>0) link(id,nodes.length-2);
+      }
+      link(nodes.length-1, nodes.length-1-(Math.min(dd,5)*6 + (ring-1)*6 - 1));// close ring (approx)
+    }
+
+  } else {
+    // ── SURFACE / XZZX / HEAVY-HEX / FLOQUET / SUBSYSTEM — ALL SQUARE-FAMILY ──
+    // Use the same correct surface-code layout as the base for all square codes.
+    // Heavy-hex differs by only using degree-3 connectivity (every-other-edge syndromes).
+    const isHeavy = ck==='heavy_hex'||ck==='heavy_hex_tailored'||ck==='heavy_hex_xzzx';
+    const map={};
+    for(let i=0;i<dd;i++) for(let j=0;j<dd;j++){
+      map[`${i},${j}`]=add(j/(dd-1), i/(dd-1), 'data');
+    }
+    if(isHeavy){
+      // Heavy-hex: syndromes sit ON edges (not plaquette centres), only on alternating edges
+      for(let i=0;i<dd;i++) for(let j=0;j<dd-1;j++){
+        if((i+j)%2===0){
+          const s=add((j+0.5)/(dd-1), i/(dd-1), 'syn');
+          link(s,map[`${i},${j}`]); link(s,map[`${i},${j+1}`]);
+        }
+      }
+      for(let i=0;i<dd-1;i++) for(let j=0;j<dd;j++){
+        if((i+j)%2===1){
+          const s=add(j/(dd-1),(i+0.5)/(dd-1),'syn');
+          link(s,map[`${i},${j}`]); link(s,map[`${i+1},${j}`]);
+        }
+      }
+    } else {
+      // Standard surface: plaquette stabilizers at face centres (degree-4)
+      for(let i=0;i<dd-1;i++) for(let j=0;j<dd-1;j++){
+        const s=add((j+0.5)/(dd-1),(i+0.5)/(dd-1),'syn');
+        link(s,map[`${i},${j}`]); link(s,map[`${i},${j+1}`]);
+        link(s,map[`${i+1},${j}`]); link(s,map[`${i+1},${j+1}`]);
+      }
+    }
+    normalise(0.06);
+  }
+
+  return {nodes,edges};
+}
+
+function drawQEC(svgId,ck,d,tier){
+  const svg=document.getElementById(svgId); if(!svg) return;
+  const W=260,H=150,pad=10;
+  const {nodes,edges}=qecNodes(ck,d);
+  const X=n=>pad+n.x*(W-2*pad), Y=n=>pad+n.y*(H-2*pad);
+  const col=tier==='PASS'?'#1D9E75':tier==='MODERATE'?'#BA7517':tier==='FAIL'?'#c0392b':'#7F77DD';
+  // node size scales with qubit count so large codes still fit
+  const r=Math.max(2.5, Math.min(5, 140/Math.sqrt(nodes.length)));
+  let s='';
+  // edges first (below nodes)
+  edges.forEach(([a,b])=>{const na=nodes[a],nb=nodes[b];
+    s+=`<line x1="${X(na)}" y1="${Y(na)}" x2="${X(nb)}" y2="${Y(nb)}" stroke="${col}" stroke-width="0.8" opacity="0.4"/>`;});
+  // data qubits: filled circles
+  // syndrome qubits: open diamonds (rotated squares)
+  nodes.forEach(n=>{const x=X(n),y=Y(n);
+    if(n.role==='syn'){
+      const dr=r*0.9;
+      s+=`<rect x="${x-dr}" y="${y-dr}" width="${2*dr}" height="${2*dr}" rx="0.5"
+           fill="none" stroke="${col}" stroke-width="1.2" opacity="0.85"
+           transform="rotate(45 ${x} ${y})"/>`;
+    } else {
+      s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.85"/>`;
+    }
+  });
+  svg.innerHTML=s;
+}
+// ── manual click-to-dope: a persistent doping mask over the lattice sites ──
+function ensureDopeMask(n){ if(!window._dopeMask||window._dopeMask.length!==n) window._dopeMask=new Uint8Array(n); return window._dopeMask; }
+function toggleDope(idx){
+  const ck=document.getElementById('code').value, d=parseInt(document.getElementById('dist').value)||5;
+  const dk=document.getElementById('dop').value;
+  if(dk==='none') return;                       // need a dopant selected to place one
+  const len=qecNodes(ck,d).nodes.length;
+  const mask=ensureDopeMask(len);
+  if(idx<0||idx>=len) return;
+  mask[idx]=mask[idx]?0:1;
+  redrawDoping();
+}
+function redrawDoping(){
+  const ck=document.getElementById('code').value, d=parseInt(document.getElementById('dist').value)||5;
+  const hk=document.getElementById('host').value, dk=document.getElementById('dop').value;
+  const {nodes}=qecNodes(ck,d);
+  const mask=(dk!=='none')?ensureDopeMask(nodes.length):null;
+  drawMaterial('mat_svg',hk,dk,'none','wait',ck,d,mask);
+  if(typeof drawSamplerFrame==='function') drawSamplerFrame('sampler_svg',nodes,mask||new Uint8Array(nodes.length),hk,dk,0,1);
+  updateGibbsBar(mask,hk,dk);
+}
+function updateGibbsBar(mask,hk,dk){
+  const bar=document.getElementById('sampler_bar'), st=document.getElementById('sampler_stats');
+  if(dk==='none'||!mask){ if(st)st.textContent='select a dopant, then click sites to dope'; return; }
+  let c=0;for(let i=0;i<mask.length;i++)c+=mask[i];const dopFrac=mask.length?c/mask.length:0;
+  const sup=(DOP[dk]&&typeof DOP[dk].sup==='number')?DOP[dk].sup:0;
+  const dG=MAT[hk].Gf+(sup>0?-8*sup:-sup*40)*dopFrac*(1-dopFrac)*100;
+  if(bar)bar.style.width=Math.max(0,Math.min(100,(-dG/2000)*100))+'%';
+  if(st)st.textContent=`doping ${Math.round(dopFrac*100)}% · ΔG ${dG.toFixed(0)} kJ/mol · click sites to edit`;
+}
+function drawMaterial(svgId,hk,dk,l2k,tier,ck,d,mask){
+  const svg=document.getElementById(svgId);
+  const W=260,H=150,pad=10;
+  const m=MAT[hk],dop=DOP[dk],l2=LAYER2[l2k];
+  const {nodes}=qecNodes(ck,d);
+  if(!mask && dk!=='none') mask=ensureDopeMask(nodes.length);   // persistent click-to-dope mask
+  // IDENTICAL mapping to drawQEC so material dots sit exactly under the QEC dots
+  const X=n=>pad + n.x*(W-2*pad);
+  const Y=n=>pad + n.y*(H-2*pad);
+  const goodCol = m.TLS<1.0?'#1D9E75':m.TLS<1.4?'#BA7517':'#c0392b';
+  const r=Math.max(2.5, Math.min(5.5, 130/Math.sqrt(nodes.length)));
+  let s='';
+  if(l2){
+    const dz = l2.pos==='below'? 12 : -12;
+    const iCol = l2.iTLS<0.08?'#1D9E75':l2.iTLS<0.12?'#BA7517':'#c0392b';
+    nodes.forEach(n=>{
+      s+=`<circle cx="${X(n)}" cy="${Y(n)+dz}" r="${r*0.65}" fill="rgba(127,119,221,.18)" stroke="#7F77DD" stroke-width="0.5"/>`;
+    });
+    nodes.forEach((n,idx)=>{ if(idx%2) return;
+      s+=`<line x1="${X(n)}" y1="${Y(n)}" x2="${X(n)}" y2="${Y(n)+dz}" stroke="${iCol}" stroke-width="0.7" opacity="0.5"/>`;
+    });
+  }
+  nodes.forEach((n,idx)=>{
+    const x=X(n),y=Y(n);
+    const isDopant = (dk!=='none') && mask && !!mask[idx];
+    const col = isDopant ? '#E5484D' : '#3B82F6';
+    const opacity = isDopant ? 0.7 : 0.55;
+    const nr = isDopant ? r*1.15 : r;
+    const clk = (dk!=='none') ? ` onclick="toggleDope(${idx})" style="cursor:pointer"` : '';
+    s+=`<circle cx="${x}" cy="${y}" r="${nr}" fill="${col}" opacity="${opacity}" stroke="${col}" stroke-width="0.8"${clk}/>`;
+  });
+  svg.innerHTML=s;
+}
+// overlay: QEC stabilizers sitting ON the material doping sites — same geometry
+function drawOverlay(svgId,hk,dk,ck,d){
+  const svg=document.getElementById(svgId);
+  const W=130,H=130,pad=10;
+  const {nodes,edges}=qecNodes(ck,d);
+  const X=n=>pad+n.x*(W-2*pad), Y=n=>pad+n.y*(H-2*pad);
+  const r=Math.max(2, Math.min(4.5, 90/Math.sqrt(nodes.length)));
+  let s='';
+  nodes.forEach(n=>{s+=`<circle cx="${X(n)}" cy="${Y(n)}" r="${r*1.3}" fill="rgba(216,90,48,.15)" stroke="#D85A30" stroke-width="0.4"/>`;});
+  edges.forEach(([a,b])=>{const na=nodes[a],nb=nodes[b];
+    s+=`<line x1="${X(na)}" y1="${Y(na)}" x2="${X(nb)}" y2="${Y(nb)}" stroke="#1D9E75" stroke-width="1" opacity="0.6"/>`;});
+  nodes.forEach(n=>{const x=X(n),y=Y(n);
+    if(n.role==='syn') s+=`<rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="none" stroke="#1D9E75" stroke-width="1" transform="rotate(45 ${x} ${y})"/>`;
+    else s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#1D9E75"/>`;});
+  svg.innerHTML=s;
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// RECOMMENDER — respects locks, ranks by Gibbs stability
+// ════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// SAME-GEOMETRY CODE SYNTHESIZER (the real "new tailored code" idea)
+// When the user's code fails, we DON'T switch geometry. We synthesize a
+// tailored code IN THE SAME SHAPE FAMILY, raising its effective threshold
+// via bias-tailoring (Hadamard rotation — Roffe 2023, Xu 2022) so it can
+// actually pass while keeping the user's qubit geometry.
+//
+// Rule: a code's threshold can be lifted toward its bias-tailored maximum
+// when the qubit noise is biased. We synthesize the minimal tailoring +
+// distance + material/dopant (respecting locks) that meets the target,
+// staying in the SAME geometry as the user's chosen code.
+// ════════════════════════════════════════════════════════════════════
+
+// bias-tailored max threshold reachable within a geometry family
+function tailoredMaxTh(shape){
+  // square (XZZX-tailorable) → up to 50% at infinite bias (Bonilla Ataides)
+  // triangular (color) → modest lift, ~1% bias-tailored (Sahay/strip-symmetric)
+  // chain (repetition) → already 50%; cavity (bosonic) → ~3% photon-loss limited
+  if(shape==='square') return 0.50;
+  if(shape==='triangular') return 0.012;
+  if(shape==='chain') return 0.50;
+  if(shape==='cavity') return 0.03;   // bosonic: photon-loss limited
+  return 0.03;
+}
+
+function synthesizeSameGeometry(qk,hk,dk,ck,d,target){
+  const userShape = QEC[ck].shape;
+  const eta = QUB[qk].eta;
+  const hosts = LOCK.host? [hk] : Object.keys(MAT);
+  const dops  = LOCK.dop ? [dk] : ['fluorine','nitrogen','erbium','none'];
+  const maxTh = tailoredMaxTh(userShape);
+  // bias-tailoring factor from η: how far we lift toward maxTh (full by η≈20)
+  const tailorFrac = Math.min(1, Math.max(0, (eta-1)/19));
+
+  const out=[];
+  for(const h2 of hosts){
+    for(const dp2 of dops){
+      const dList = LOCK.dist? [d] : [3,5,7];
+      for(const d2 of dList){
+        // synthesize the tailored code: same geometry, lifted threshold
+        const baseTh = QEC[ck].th;
+        const synthTh = baseTh + (maxTh - baseTh)*tailorFrac;
+        // evaluate coherence with this material/dopant
+        const {T1,T2,stabilityFactor} = coherence(h2,dp2,15,QUB[qk].freq);
+        const floor = stackFloor(4,100);
+        const p = QEC[ck].cy/T1 + QEC[ck].cy/(2*T2) + floor;
+        const below = p < synthTh;
+        // effective distance gets a bias boost in tailorable geometries
+        const dEff = (userShape==='square'||userShape==='chain') ? d2*Math.min(Math.sqrt(eta),3) : d2;
+        const pL = logicalErr(p, synthTh, dEff);
+        if(below && pL < target/3){
+          out.push({hk:h2,dk:dp2,dist:d2,synthTh,T1,T2,pL,
+            Gf:gibbs(h2,dp2),tailorPct:Math.round(tailorFrac*100),
+            shape:userShape, dEff});
+        }
+      }
+    }
+  }
+  // rank by stability then logical error
+  out.sort((a,b)=>(a.Gf-b.Gf)||(a.pL-b.pL));
+  return out[0]||null;
+}
+
+function recommend(qk,hk,dk,ck,d,target){
+  // Always synthesize in the SAME geometry as the user's code.
+  return synthesizeSameGeometry(qk,hk,dk,ck,d,target);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// UI
+// ════════════════════════════════════════════════════════════════════
+function tog(key){
+  LOCK[key]=!LOCK[key];
+  const map={qubit:'lk_qubit',host:'lk_host',dop:'lk_dop',dist:'lk_dist',sim:'lk_sim'};
+  const el=document.getElementById(map[key]);
+  if(LOCK[key]){el.className='lock keep';el.textContent='🔒keep';}
+  else{el.className='lock opt';el.textContent='🔓optimize';}
+}
+function sync(){
+  // live preview of the two lattices (neutral color until run)
+  const ck=document.getElementById('code').value, d=parseInt(document.getElementById('dist').value)||5;
+  const hk=document.getElementById('host').value, dk=document.getElementById('dop').value, l2='none';
+  document.getElementById('qec_tag').textContent=`QEC: ${QEC[ck].label} d=${d} · stabilizer connectivity`;
+  document.getElementById('mat_tag').textContent=`Material: ${MAT[hk].label}${dk!=='none'?' + '+DOP[dk].label:''}${l2!=='none'?' + '+LAYER2[l2].label+' layer':''}`;
+  drawQEC('qec_svg',ck,d,'wait');
+  drawMaterial('mat_svg',hk,dk,l2,'wait',ck,d);
+  if(typeof drawBench==='function') drawBench();
+  if(typeof updateGibbsBar==='function') updateGibbsBar(window._dopeMask,hk,dk);
+  drawDetectionInterval(ck, parseInt(document.getElementById('czweight').value)||codeWeight(ck));
+  // live host T1/T2 + oxide-loss preview
+  const ho=document.getElementById('host_t1t2');
+  if(ho){const hv=parseFloat(document.getElementById('hostVol').value)||HOSTOX.vol0;
+    const lm=Math.max(0.1,(1-HOSTOX.fOx)+HOSTOX.fOx*(hv/HOSTOX.vol0));
+    ho.innerHTML='catalog T₁ '+MAT[hk].T1+'μs · T₂ '+MAT[hk].T2+'μs · oxide loss ×'+lm.toFixed(2);}
+  renderSimBench(null);
+}
+function loadEx(t){
+  const set=(id,v)=>document.getElementById(id).value=v;
+  if(t==='pass'){set('qubit','fluxonium');set('host','tantalum_cap');set('dop','fluorine');set('code','xzzx');set('dist','5');set('target','0.005');}
+  else if(t==='mod'){set('qubit','transmon');set('host','aluminum_oxide_dolan');set('dop','nitrogen');set('code','surface');set('dist','5');set('target','0.005');}
+  else{set('qubit','transmon');set('host','niobium_nitride');set('dop','none');set('code','surface');set('dist','5');set('target','0.005');}
+  sync(); run();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LIVE GIBBS SAMPLER — draws each doping config tried in real-time.
+// Nodes = same QEC topology (same physical qubits). Each site is either
+// doped (bright, dopant colour) or undoped (faint). Score bar tracks
+// how close the current config is to optimal. Converges to best config.
+// ════════════════════════════════════════════════════════════════════
+const CHIP_LAYERS=[
+ {n:1,name:'substrate',           mat:'sapphire / HR-Si', base:0.95, dope:false, defk:1, note:'crystalline wafer — very stable'},
+ {n:2,name:'superconducting film',mat:'Ta / Nb / Al',     base:null, dope:true,  defk:2, note:'doped film lattice (doping acts here)'},
+ {n:3,name:'Josephson junction',  mat:'Al–AlOₓ–Al',       base:0.55, dope:false, defk:3, note:'amorphous AlOₓ barrier — TLS-prone'},
+ {n:4,name:'airbridges',          mat:'Al crossovers',    base:0.80, dope:false, defk:2, note:'evaporated Al'},
+ {n:5,name:'indium bump bonds',   mat:'In',               base:0.45, dope:false, defk:3, note:'soft, low-melting metal — least stable'},
+ {n:6,name:'interposer chip',     mat:'Si carrier',       base:0.92, dope:false, defk:1, note:'crystalline Si'},
+ {n:7,name:'TSVs',                mat:'SC vias',          base:0.78, dope:false, defk:2, note:'through-wafer metal'},
+ {n:8,name:'redistribution / I/O',mat:'Nb / Al wiring',   base:0.85, dope:false, defk:2, note:'patterned wiring'},
+];
+window.gibbsLayer=3;
+// stability → color: 1 = stable (green) · 0.5 = yellow · 0 = unstable (red)
+function gibbsColor(s){
+  s=Math.max(0,Math.min(1,s));let r,g,b;
+  if(s>0.5){const t=(s-0.5)/0.5;r=Math.round(245+(29-245)*t);g=Math.round(197+(158-197)*t);b=Math.round(24+(117-24)*t);}
+  else{const t=s/0.5;r=Math.round(229+(245-229)*t);g=Math.round(72+(197-72)*t);b=Math.round(77+(24-77)*t);}
+  return `rgb(${r},${g},${b})`;
+}
+function initGibbsLayers(){
+  if(window.gibbsLayer>3) window.gibbsLayer=3;
+  const sel=document.getElementById('gibbs_layer_sel');
+  if(sel){
+    sel.innerHTML=CHIP_LAYERS.filter(L=>L.n<=3).map(L=>`<option value="${L.n}"${L.n===window.gibbsLayer?' selected':''}>${L.n} — ${L.name}</option>`).join('');
+    sel.value=String(window.gibbsLayer);
+  }
+  const L=CHIP_LAYERS[window.gibbsLayer-1];const lab=document.getElementById('gibbs_layer_label');
+  if(lab)lab.textContent=`layer ${L.n}/8 · ${L.name} (${L.mat}) — ${L.note}`;
+}
+function setGibbsLayer(n){window.gibbsLayer=Math.min(3,Math.max(1,n));initGibbsLayers();const g=window._lastGibbs;
+  if(g)drawSamplerFrame('sampler_svg',g.nodes,g.mask,g.hk,g.dk,g.score,g.best);}
+
+function drawSamplerFrame(svgId, nodes, dopingMask, hk, dk, currentScore, bestScore){
+  const svg=document.getElementById(svgId);
+  if(!svg) return;
+  window._lastGibbs={nodes,mask:dopingMask,hk,dk,score:currentScore,best:bestScore};
+  const W=260,H=150,pad=8;
+  const layer=CHIP_LAYERS[(window.gibbsLayer||3)-1]||CHIP_LAYERS[2];
+  // QEC connectivity (edges) for the code overlay \u2014 same ck,d as the lattice
+  const ckEl=document.getElementById('code'),dEl=document.getElementById('dist');
+  const ck=ckEl?ckEl.value:'surface', d=dEl?(parseInt(dEl.value)||5):5;
+  let edges=[]; try{ edges=qecNodes(ck,d).edges||[]; }catch(e){}
+  // per-layer base stability \u2014 substrate \u2260 film \u2260 junction
+  let base, dopedPts=[];
+  if(layer.dope){
+    const dopFrac=dopingMask.reduce((a,b)=>a+b,0)/Math.max(1,dopingMask.length);
+    const sup=(DOP[dk]&&typeof DOP[dk].sup==='number')?DOP[dk].sup:0;
+    const dG=MAT[hk].Gf+(sup>0?-8*sup:-sup*40)*dopFrac*(1-dopFrac)*100;
+    base=Math.max(0.05,Math.min(0.97,-dG/2000));
+    nodes.forEach((n,i)=>{if(dopingMask[i])dopedPts.push([n.x,n.y]);});
+  } else base=layer.base;
+  let seed=7;for(const ch of (layer.name+hk))seed=(seed*31+ch.charCodeAt(0))%9973;
+  const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+  const nd=Math.max(1,Math.round(layer.defk*(1.4-base*0.8)));
+  const defects=[];for(let k=0;k<nd;k++)defects.push([rnd(),rnd(),0.09+0.10*rnd()]);
+  // \u2500\u2500 stability field (heat map) \u2500\u2500
+  const NX=34,NY=20,cw=(W-2*pad)/NX,chh=(H-2*pad)/NY;
+  let s='';
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){
+    const x=(i+0.5)/NX,y=(j+0.5)/NY;let v=base;
+    for(const p of dopedPts){const dx=x-p[0],dy=y-p[1];v+=0.22*Math.exp(-(dx*dx+dy*dy)/(2*0.0025));}
+    for(const df of defects){const dx=x-df[0],dy=y-df[1];v-=0.45*Math.exp(-(dx*dx+dy*dy)/(2*df[2]*df[2]));}
+    v=Math.max(0,Math.min(1,v));
+    s+=`<rect x="${(pad+i*cw).toFixed(1)}" y="${(pad+j*chh).toFixed(1)}" width="${(cw+0.7).toFixed(1)}" height="${(chh+0.7).toFixed(1)}" fill="${gibbsColor(v)}"/>`;
+  }
+  s+=`<rect x="${pad}" y="${pad}" width="${W-2*pad}" height="${H-2*pad}" fill="none" stroke="#0d0d12" stroke-width="1.5" rx="2"/>`;
+  const X=n=>pad+n.x*(W-2*pad), Y=n=>pad+n.y*(H-2*pad);
+  const nr=Math.max(2.5,Math.min(5,130/Math.sqrt(nodes.length)));
+  // \u2500\u2500 QEC CODE OVERLAY: stabilizer connectivity edges \u2500\u2500
+  edges.forEach(([a,b])=>{ if(nodes[a]&&nodes[b]){
+    s+=`<line x1="${X(nodes[a]).toFixed(1)}" y1="${Y(nodes[a]).toFixed(1)}" x2="${X(nodes[b]).toFixed(1)}" y2="${Y(nodes[b]).toFixed(1)}" stroke="#0d0d12" stroke-width="1.3" opacity="0.55"/>`;
+  }});
+  // \u2500\u2500 LAYER-SPECIFIC PHYSICAL COMPONENTS (layers 1\u20133) \u2500\u2500
+  if(layer.n===2){
+    // capacitor pads (transmon / ancilla islands) at every qubit
+    nodes.forEach(n=>{const x=X(n),y=Y(n),pw=nr*1.6;
+      s+=`<rect x="${(x-pw).toFixed(1)}" y="${(y-pw*0.7).toFixed(1)}" width="${(2*pw).toFixed(1)}" height="${(1.4*pw).toFixed(1)}" rx="1.5" fill="rgba(13,13,18,0.30)" stroke="#0d0d12" stroke-width="0.6"/>`;});
+  } else if(layer.n===3){
+    // Josephson junction symbol (\u00d7) at every qubit
+    nodes.forEach(n=>{const x=X(n),y=Y(n),j=nr*0.85;
+      s+=`<line x1="${(x-j).toFixed(1)}" y1="${(y-j).toFixed(1)}" x2="${(x+j).toFixed(1)}" y2="${(y+j).toFixed(1)}" stroke="#0d0d12" stroke-width="1.1"/>`;
+      s+=`<line x1="${(x-j).toFixed(1)}" y1="${(y+j).toFixed(1)}" x2="${(x+j).toFixed(1)}" y2="${(y-j).toFixed(1)}" stroke="#0d0d12" stroke-width="1.1"/>`;});
+  } else if(layer.n===1){
+    // substrate: faint field footprint ring under each qubit
+    nodes.forEach(n=>{const x=X(n),y=Y(n);
+      s+=`<circle cx="${X(n).toFixed(1)}" cy="${Y(n).toFixed(1)}" r="${(nr*1.4).toFixed(1)}" fill="none" stroke="#0d0d12" stroke-width="0.5" opacity="0.4"/>`;});
+  }
+  // \u2500\u2500 qubit markers (data pads / syndrome ancillas) + doping (clickable on the film) \u2500\u2500
+  nodes.forEach((n,i)=>{
+    const x=X(n),y=Y(n),doped=layer.dope&&dopingMask[i];
+    if(n.role==='syn'){
+      const dr=nr*0.7;
+      s+=`<rect x="${x-dr}" y="${y-dr}" width="${2*dr}" height="${2*dr}" fill="none" stroke="${doped?'#fff':'#0d0d12'}" stroke-width="${doped?1.2:0.8}" opacity="${doped?0.95:0.6}" transform="rotate(45 ${x} ${y})"/>`;
+    } else {
+      const r=nr*0.55;
+      s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${doped?'#E5484D':'rgba(13,13,18,0.55)'}" stroke="${doped?'#fff':'#0d0d12'}" stroke-width="${doped?1.1:0.6}"/>`;
+    }
+  });
+  // caption: layer + key physical components
+  const comp={1:'substrate dielectric \u00b7 field footprints',2:'capacitor pads + couplers',3:'Josephson junctions (\u00d7/qubit)'}[layer.n]||'';
+  s+=`<text x="${pad+2}" y="${H-pad-2}" fill="#0d0d12" font-size="7" font-weight="700">L${layer.n} \u00b7 ${comp}</text>`;
+  svg.innerHTML=s;
+}
+
+// Config score: lower physical error = higher score (0–1)
+function configScore(dopingFraction, hk, dk, ck, opts){
+  // fast estimate: dopant fraction affects TLS → T1 → error
+  const mat=MAT[hk], dop=DOP[dk];
+  const f=Math.max(0.25,1-dop.sup*dopingFraction*1.5);
+  const tK=Math.max(opts.tempChip||15,1)/1000;
+  const kB=8.617e-5, hf=6.626e-34*(opts.freq||5)*1e9/1.602e-19;
+  const thermal=Math.max(0.5,Math.tanh(hf/(2*kB*tK)));
+  const G=gibbs(hk,dk);
+  const sf=Math.max(0.5,Math.min(1.0,0.5+(-G-200)/1600));
+  const T1=Math.min(mat.T1/f, mat.T1*1.25)*thermal*sf;
+  const T2=Math.min(mat.T2/f, T1*0.95, mat.T2*1.25)*thermal*sf;
+  const floor=stackFloor(opts.hemt||4, opts.filter||100);
+  const err=QEC[ck].cy/T1 + QEC[ck].cy/(2*T2) + floor;
+  return {score: Math.max(0, 1-err/QEC[ck].th), err, T1};
+}
+
+let samplerRunning=false, samplerStop=false;
+
+// ── Simulation library + benchmark routing ──
+// Ties three things together: the simulation choice (its qubit count N),
+// the classical memory wall (~49 qubits), and the chip verdict from ArQiteQ.
+const SIMS={
+  bose_hubbard:     {label:'Bose-Hubbard (hard-core bosons)',              note:'lattice bosons: hopping + repulsion — cold-atom / superfluid–Mott case (default)'},
+  frustrated_magnet:{label:'Frustrated magnet — Heisenberg (spin-liquid)', note:'genuine quantum territory: frustration + correlation, classically hard'},
+  hubbard:          {label:'Electronic structure — Fermi-Hubbard',         note:'correlated electrons — the materials / chemistry case'},
+  ising:            {label:'Transverse-field Ising',                       note:'quantum magnetism / phase-transition dynamics'},
+  heisenberg:       {label:'Heisenberg chain (1D)',                        note:'baseline magnetism (classically easier in 1D)'},
+};
+function fmtBytes(b){const u=['B','KB','MB','GB','TB','PB','EB','ZB'];let i=0;while(b>=1024&&i<u.length-1){b/=1024;i++;}return b.toFixed(b<10?2:0)+' '+u[i];}
+
+// ── live solver: key values of each simulation (small N, exact via Lanczos) ──
+function simHamiltonian(sim,N){const T=[];const heis=(i,j,J)=>{T.push({coeff:0.25*J,flip:(1<<i)|(1<<j),yqs:[],zqs:[]});T.push({coeff:0.25*J,flip:(1<<i)|(1<<j),yqs:[i,j],zqs:[]});T.push({coeff:0.25*J,flip:0,yqs:[],zqs:[i,j]});};
+if(sim==='heisenberg'){for(let i=0;i<N-1;i++)heis(i,i+1,1);}
+else if(sim==='bose_hubbard'){const t=1,V=2;for(let i=0;i<N-1;i++){
+  // hard-core bosons: hopping -t(b†b+h.c.) = -t/2(XX+YY); NN repulsion V·n_i n_j → V/4 ZZ
+  T.push({coeff:-0.5*t,flip:(1<<i)|(1<<(i+1)),yqs:[],zqs:[]});
+  T.push({coeff:-0.5*t,flip:(1<<i)|(1<<(i+1)),yqs:[i,i+1],zqs:[]});
+  T.push({coeff:V/4,flip:0,yqs:[],zqs:[i,i+1]});}}
+else if(sim==='frustrated_magnet'){for(let i=0;i<N-1;i++)heis(i,i+1,1);for(let i=0;i<N-2;i++)heis(i,i+2,0.5);}
+else if(sim==='ising'){for(let i=0;i<N-1;i++)T.push({coeff:-1,flip:0,yqs:[],zqs:[i,i+1]});for(let i=0;i<N;i++)T.push({coeff:-1,flip:(1<<i),yqs:[],zqs:[]});}
+else if(sim==='hubbard'){const L=Math.floor(N/2),t=1,U=4;const hop=(i,j)=>{T.push({coeff:-0.5*t,flip:(1<<i)|(1<<j),yqs:[],zqs:[]});T.push({coeff:-0.5*t,flip:(1<<i)|(1<<j),yqs:[i,j],zqs:[]});};for(let i=0;i<L-1;i++){hop(i,i+1);hop(L+i,L+i+1);}for(let i=0;i<L;i++){T.push({coeff:U/4,flip:0,yqs:[],zqs:[i,L+i]});}}
+return T;}
+function applyH(terms,N,v){const dim=1<<N,out=new Float64Array(dim);for(const t of terms){for(let i=0;i<dim;i++){const vi=v[i];if(vi===0)continue;let ph=t.coeff;for(const q of t.zqs)if((i>>q)&1)ph=-ph;if(t.yqs.length){let ys=1;for(const q of t.yqs)if((i>>q)&1)ys=-ys;ph=-ph*ys;}out[i^t.flip]+=ph*vi;}}return out;}
+function dotv(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+function eigK(a,b,k){const m=a.length;const count=x=>{let c=0,d=a[0]-x;if(d<0)c++;for(let i=1;i<m;i++){d=a[i]-x-(b[i-1]*b[i-1])/(d===0?1e-12:d);if(d<0)c++;}return c;};let lo=a[0],hi=a[0];for(let i=0;i<m;i++){const r=Math.abs(b[i-1]||0)+Math.abs(b[i]||0);lo=Math.min(lo,a[i]-r);hi=Math.max(hi,a[i]+r);}for(let it=0;it<140;it++){const mid=(lo+hi)/2;if(count(mid)>=k)hi=mid;else lo=mid;}return (lo+hi)/2;}
+function thomas(d,e,r){const m=d.length;const cp=new Float64Array(m),dp=new Float64Array(m),x=new Float64Array(m);let den=d[0]||1e-12;cp[0]=(e[0]||0)/den;dp[0]=r[0]/den;for(let i=1;i<m;i++){den=(d[i]-(e[i-1]||0)*cp[i-1])||1e-12;cp[i]=(e[i]||0)/den;dp[i]=(r[i]-(e[i-1]||0)*dp[i-1])/den;}x[m-1]=dp[m-1];for(let i=m-2;i>=0;i--)x[i]=dp[i]-cp[i]*x[i+1];return Array.from(x);}
+function tridiagEigvec(a,b,lam){const m=a.length;let y=new Array(m).fill(1/Math.sqrt(m));const sh=lam-1e-5;for(let it=0;it<4;it++){const d=a.map(v=>v-sh);const x=thomas(d,b,y);let n=0;for(const xi of x)n+=xi*xi;n=Math.sqrt(n)||1;y=x.map(xi=>xi/n);}return y;}
+function groundState(sim,N){const terms=simHamiltonian(sim,N),dim=1<<N,m=Math.min(50,dim);let v=new Float64Array(dim);for(let i=0;i<dim;i++)v[i]=Math.sin(i*0.7+0.3)+(i%3-1)*0.13;let nv=Math.sqrt(dotv(v,v))||1;for(let i=0;i<dim;i++)v[i]/=nv;const V=[];let vp=new Float64Array(dim),beta=0;const a=[],b=[];for(let k=0;k<m;k++){V.push(v.slice());let w=applyH(terms,N,v);const al=dotv(w,v);a.push(al);for(let i=0;i<dim;i++)w[i]-=al*v[i]+beta*vp[i];for(const u of V){const dd=dotv(w,u);for(let i=0;i<dim;i++)w[i]-=dd*u[i];}beta=Math.sqrt(dotv(w,w));if(beta<1e-9)break;b.push(beta);vp=v.slice();v=new Float64Array(dim);for(let i=0;i<dim;i++)v[i]=w[i]/beta;}const mm=a.length;const E0=eigK(a,b,1),E1=mm>1?eigK(a,b,2):E0;const y=tridiagEigvec(a,b,E0);let psi=new Float64Array(dim);for(let k=0;k<mm;k++){const yk=y[k],Vk=V[k];for(let i=0;i<dim;i++)psi[i]+=yk*Vk[i];}let pn=Math.sqrt(dotv(psi,psi))||1;for(let i=0;i<dim;i++)psi[i]/=pn;return {E0,gap:Math.max(0,E1-E0),psi};}
+function expval(terms,N,psi){return dotv(psi,applyH(terms,N,psi));}
+function spinCorr(i,j){return [{coeff:0.25,flip:(1<<i)|(1<<j),yqs:[],zqs:[]},{coeff:0.25,flip:(1<<i)|(1<<j),yqs:[i,j],zqs:[]},{coeff:0.25,flip:0,yqs:[],zqs:[i,j]}];}
+let _simCache={};
+function simAnswer(sk,N,pEff){
+  if(N<2) return '';
+  if(N>12) return '<br><span style="color:var(--text3)">key values: N&gt;12 → beyond live exact solve (HPC/QPU job)</span>';
+  try{
+    const key=sk+'_'+N; let r=_simCache[key]; if(!r){ r=groundState(sk,N); _simCache[key]=r; }
+    const E0=r.E0, gap=r.gap;
+    const gapTxt = gap<0.12 ? '<span style="color:var(--purple)">near-gapless/critical</span>' : 'gapped';
+    let obsName, obsVal;
+    if(sk==='hubbard'){ const L=Math.floor(N/2);
+      obsVal=expval([{coeff:0.25,flip:0,yqs:[],zqs:[]},{coeff:-0.25,flip:0,yqs:[],zqs:[0]},{coeff:-0.25,flip:0,yqs:[],zqs:[L]},{coeff:0.25,flip:0,yqs:[],zqs:[0,L]}],N,r.psi);
+      obsName='double occupancy ⟨n↑n↓⟩';
+    } else if(sk==='ising'){ obsVal=expval([{coeff:1,flip:1,yqs:[],zqs:[]}],N,r.psi); obsName='transverse mag ⟨X₀⟩'; }
+    else { obsVal=expval(spinCorr(0,1),N,r.psi); obsName='⟨S₀·S₁⟩'; }
+    let html='<br><b style="color:var(--green)">exact answer</b> <span style="color:var(--text3)">[true values, N='+N+']</span>:'+
+      '<br>· E₀ = <b>'+E0.toFixed(3)+'</b> ('+(E0/N).toFixed(3)+'/qubit) · gap Δ = <b>'+gap.toFixed(3)+'</b> ('+gapTxt+')'+
+      '<br>· '+obsName+' = <b>'+obsVal.toFixed(3)+'</b>';
+    if(pEff!=null && isFinite(pEff)){
+      const depth=N*10;                                   // rough circuit depth (rounds)
+      const F=Math.pow(1-Math.min(Math.max(pEff,0),0.5), depth);   // computation fidelity on THIS chip
+      const fc=F>0.8?'var(--green)':F>0.4?'var(--amber)':'var(--red)';
+      html+='<br><b style="color:'+fc+'">on this chip</b> <span style="color:var(--text3)">(fidelity '+(F*100).toFixed(1)+'% · logical err '+pEff.toExponential(1)+')</span>:'+
+        '<br>· E₀ ≈ <b>'+(E0*F).toFixed(3)+'</b> · gap ≈ <b>'+(gap*F).toFixed(3)+'</b> · '+obsName+' ≈ <b>'+(obsVal*F).toFixed(3)+'</b>'+
+        '<br><span style="color:'+fc+'">'+(F>0.8?'high fidelity → matches the true answer':F>0.4?'partial → drifting from truth':'low fidelity → answer corrupted (chip too noisy)')+'</span>';
+    }
+    return html;
+  }catch(e){ return '<br><span style="color:var(--text3)">key values: solve error</span>'; }
+}
+
+function effectiveSim(){const se=document.getElementById('sim');const v=se?se.value:'bose_hubbard';return LOCK.sim?v:'bose_hubbard';}
+function renderSimBench(tier,pEff){
+  const se=document.getElementById('sim'); if(!se) return;
+  const sk=effectiveSim(), N=Math.max(1,parseInt(document.getElementById('sim_n').value)||8), sim=SIMS[sk];
+  const mem=16*Math.pow(2,N), ELCAP=5.4375e15;     // exact state-vector bytes vs El Capitan RAM
+  let route,col,why;
+  if(N<=30){route='xpyq classical (exact)';col='var(--green)';why='small enough to simulate exactly & cheaply';}
+  else if(mem<=ELCAP){route='top HPC only — or QPU';col='var(--amber)';why='needs ~'+fmtBytes(mem)+' RAM; only the biggest supercomputers';}
+  else{route='QPU REQUIRED';col='var(--red)';why='classical needs '+fmtBytes(mem)+' — impossible (El Capitan = 5.4 PB)';}
+  let vline='<span style="color:var(--text3)">Run to combine with the chip verdict.</span>';
+  if(tier){
+    if(mem>ELCAP) vline = (tier==='PASS')
+        ? '<span style="color:var(--green)">chip PASS → run it on the QPU \u2713</span>'
+        : '<span style="color:var(--red)">QPU needed, but chip is '+tier+' \u2192 can\u2019t sustain the circuit \u2717</span>';
+    else if(N<=30) vline='xpyq classical is the exact reference; the QPU (chip '+tier+') validates it.';
+    else vline = (tier==='PASS')
+        ? '<span style="color:var(--green)">chip PASS \u2192 QPU viable; classical only on a top HPC</span>'
+        : 'classical (top HPC) is the safer path here — chip is '+tier+'.';
+  }
+  // ── correct, model-aware output: energy headline + meaningful observable ──
+  let head='<b>'+sim.label+'</b> · <b>'+N+'</b> qubits · <span style="color:'+col+'">'+route+'</span>';
+  const sc=document.getElementById('sim_chart');
+  if(N>=2 && N<=12){
+    let r=_simCache[sk+'_'+N]; if(!r){ try{ r=groundState(sk,N); _simCache[sk+'_'+N]=r; }catch(e){ r=null; } }
+    if(r){
+      const prof=simProfile(sk,N,r.psi);
+      const F=(pEff!=null && isFinite(pEff)) ? Math.pow(1-Math.min(Math.max(pEff,0),0.5),N*10) : null;
+      head+='<br><b style="color:var(--text)">Theory (ideal):</b> E₀ = <b>'+r.E0.toFixed(3)+'</b> · gap Δ = <b>'+r.gap.toFixed(3)+'</b>'+(prof.obs?' · '+prof.obs:'');
+      if(F!=null){ const fc=F>0.8?'var(--green)':F>0.4?'var(--amber)':'var(--red)';
+        head+='<br><b style="color:'+fc+'">Your chip (run):</b> E₀ ≈ <b>'+(r.E0*F).toFixed(3)+'</b> · fidelity <b>'+(F*100).toFixed(0)+'%</b> · <b>gap '+((1-F)*100).toFixed(0)+'%</b>';
+      } else head+='<br><span style="color:var(--text3)">↓ theory shown — Run to see your chip\u2019s gap</span>';
+      drawEnergyAccuracy(r.E0, F!=null ? r.E0*F : null);
+    }
+  } else { head+='<br><span style="color:var(--text3)">N&gt;12 — beyond live exact solve (HPC/QPU job)</span>'; if(sc) sc.style.display='none'; }
+  document.getElementById('simbench').innerHTML=head;
+  // ── single verdict line: "VERDICT ~ N% fidelity" ──
+  const vb=document.getElementById('verdict');
+  if(vb && tier && pEff!=null && isFinite(pEff)){
+    const F=Math.pow(1-Math.min(Math.max(pEff,0),0.5), N*10);
+    vb.textContent=tier+' ~ '+(F*100).toFixed(0)+'% fidelity';
+  }
+}
+
+const _slp=ms=>new Promise(r=>setTimeout(r,ms));
+async function drawOverlayLive(svgId,hk,dk,ck,d){
+  const svg=document.getElementById(svgId); if(!svg) return;
+  const W=130,H=130,pad=10;
+  const {nodes,edges}=qecNodes(ck,d);
+  const X=n=>pad+n.x*(W-2*pad), Y=n=>pad+n.y*(H-2*pad);
+  const r=Math.max(2,Math.min(4.5,90/Math.sqrt(nodes.length)));
+  let parts=[]; const draw=()=>{svg.innerHTML=parts.join('');};
+  // 1 — ghost lattice sites
+  nodes.forEach(n=>parts.push(`<circle cx="${X(n)}" cy="${Y(n)}" r="${r*1.3}" fill="rgba(216,90,48,.10)" stroke="#D85A30" stroke-width="0.4"/>`));
+  draw(); await _slp(140);
+  // 2 — data qubits pop in
+  for(const n of nodes.filter(n=>n.role!=='syn')){ parts.push(`<circle cx="${X(n)}" cy="${Y(n)}" r="${r}" fill="#1D9E75"><animate attributeName="r" from="0" to="${r}" dur="0.18s"/></circle>`); draw(); await _slp(24); }
+  // 3 — stabilizer edges grow
+  for(const [a,b] of edges){ const na=nodes[a],nb=nodes[b]; parts.push(`<line x1="${X(na)}" y1="${Y(na)}" x2="${X(nb)}" y2="${Y(nb)}" stroke="#1D9E75" stroke-width="1" opacity="0.6"><animate attributeName="opacity" from="0" to="0.6" dur="0.15s"/></line>`); draw(); await _slp(8); }
+  // 4 — syndrome (ancilla) qubits appear
+  for(const n of nodes.filter(n=>n.role==='syn')){ const x=X(n),y=Y(n); parts.push(`<rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="none" stroke="#7F77DD" stroke-width="1.2" transform="rotate(45 ${x} ${y})"><animate attributeName="opacity" from="0" to="1" dur="0.2s"/></rect>`); draw(); await _slp(24); }
+}
+
+async function drawQECLive(svgId,ck,d){
+  const svg=document.getElementById(svgId); if(!svg) return;
+  const W=260,H=150,pad=10, col='#7F77DD';
+  const {nodes,edges}=qecNodes(ck,d);
+  const X=n=>pad+n.x*(W-2*pad), Y=n=>pad+n.y*(H-2*pad);
+  const r=Math.max(2.5,Math.min(5,140/Math.sqrt(nodes.length)));
+  const adj=nodes.map(()=>[]);
+  edges.forEach(([a,b],ei)=>{adj[a].push([b,ei]);adj[b].push([a,ei]);});
+  let parts=[]; const draw=()=>{svg.innerHTML=parts.join('');};
+  const seenN=new Set(), seenE=new Set();
+  const nodeStr=n=>{const x=X(n),y=Y(n); return n.role==='syn'
+    ? `<rect x="${x-r*0.9}" y="${y-r*0.9}" width="${r*1.8}" height="${r*1.8}" fill="none" stroke="${col}" stroke-width="1.2" opacity="0.85" transform="rotate(45 ${x} ${y})"><animate attributeName="opacity" from="0" to="0.85" dur="0.2s"/></rect>`
+    : `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.9"><animate attributeName="r" from="0" to="${r}" dur="0.18s"/></circle>`;};
+  const edgeStr=(a,b)=>{const na=nodes[a],nb=nodes[b]; return `<line x1="${X(na)}" y1="${Y(na)}" x2="${X(nb)}" y2="${Y(nb)}" stroke="${col}" stroke-width="0.8" opacity="0.45"><animate attributeName="stroke-width" from="2.8" to="0.8" dur="0.45s"/><animate attributeName="opacity" from="1" to="0.45" dur="0.45s"/></line>`;};
+  // route through the lattice like a path-finder, spreading from a corner
+  const q=[0]; seenN.add(0); parts.push(nodeStr(nodes[0])); draw(); await _slp(50);
+  while(q.length){
+    const cur=q.shift();
+    for(const [nb,ei] of adj[cur]){
+      if(seenE.has(ei)) continue; seenE.add(ei);
+      parts.push(edgeStr(cur,nb));                       // path chosen (flashes then settles)
+      if(!seenN.has(nb)){ seenN.add(nb); parts.push(nodeStr(nodes[nb])); q.push(nb); }
+      draw(); await _slp(13);
+    }
+  }
+  await _slp(60);
+}
+
+function codeFamily(ck){
+  if(['cat_code','binomial','gkp','fourlegged_cat','dual_rail_code'].includes(ck)) return 'bosonic';
+  if(['floquet_honeycomb','floquet_bacon_shor','ckt_honeycomb'].includes(ck)) return 'floquet';
+  return 'ancilla';                               // surface/color/heavy-hex/small + hybrids (outer code stabilizer)
+}
+function codeWeight(ck){
+  if(['color','triangular_color','color_488','color_4612'].includes(ck)) return 6;
+  if(['bacon_shor','bacon_shor_13','quantum_repetition','repetition_cat'].includes(ck)) return 2;
+  return 4;                                        // surface family, heavy-hex, small codes
+}
+function setCZfromCode(){ const ck=document.getElementById('code').value; document.getElementById('czweight').value=codeWeight(ck); sync(); }
+function drawDetectionInterval(ck,w){
+  const svg=document.getElementById('synwin'); if(!svg) return;
+  const fam=codeFamily(ck), W=260, y=40, x0=18, x1=242; let s='';
+  if(fam==='ancilla'){
+    const N=w||codeWeight(ck), gx0=x0+34, gx1=x1-34;
+    s+=`<rect x="${x0+14}" y="${y-15}" width="${x1-x0-28}" height="28" rx="4" fill="rgba(245,165,36,.08)" stroke="rgba(245,165,36,.35)" stroke-dasharray="3 2"/>`;
+    s+=`<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#4a4a55" stroke-width="1.5"/>`;
+    s+=`<rect x="${x0-9}" y="${y-9}" width="18" height="18" rx="3" fill="#16161c" stroke="#3ddc84" stroke-width="1.2"/><text x="${x0}" y="${y+4}" fill="#3ddc84" font-size="9" text-anchor="middle">R</text>`;
+    s+=`<rect x="${x1-9}" y="${y-9}" width="18" height="18" rx="3" fill="#16161c" stroke="#f5a524" stroke-width="1.2"/><text x="${x1}" y="${y+4}" fill="#f5a524" font-size="9" text-anchor="middle">M</text>`;
+    for(let i=0;i<N;i++){ const gx=N===1?(gx0+gx1)/2:gx0+i*(gx1-gx0)/(N-1);
+      s+=`<line x1="${gx}" y1="${y}" x2="${gx}" y2="${y-17}" stroke="#a78bfa" stroke-width="1.2"/><circle cx="${gx}" cy="${y-20}" r="3" fill="none" stroke="#5b9dff" stroke-width="1.2"/><circle cx="${gx}" cy="${y}" r="4" fill="#a78bfa"/>`;}
+    s+=`<text x="${(gx0+gx1)/2}" y="14" fill="#b7b7c2" font-size="8" text-anchor="middle">ancilla: ${N} entangling gates between init &amp; measure</text>`;
+  } else if(fam==='floquet'){
+    s+=`<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#4a4a55" stroke-width="1.5"/>`;
+    [x0+34,x0+110,x0+186].forEach(mx=>{ s+=`<rect x="${mx-14}" y="${y-9}" width="28" height="18" rx="3" fill="#16161c" stroke="#f5a524" stroke-width="1.2"/><text x="${mx}" y="${y+4}" fill="#f5a524" font-size="7" text-anchor="middle">2-body M</text>`;});
+    s+=`<text x="130" y="14" fill="#b7b7c2" font-size="8" text-anchor="middle">Floquet: rounds of 2-body measurements (the checks)</text>`;
+  } else {
+    let path='M'+x0+','+y; for(let i=0;i<=200;i+=5){ const xx=x0+i*0.95, amp=9*Math.exp(-i/260); path+=` L${xx.toFixed(1)},${(y-amp*Math.sin(i/9)).toFixed(1)}`; }
+    s+=`<path d="${path}" fill="none" stroke="#5b9dff" stroke-width="1.3"/>`;
+    s+=`<rect x="${x1-24}" y="${y-9}" width="24" height="18" rx="3" fill="#16161c" stroke="#f5a524" stroke-width="1.2"/><text x="${x1-12}" y="${y+4}" fill="#f5a524" font-size="8" text-anchor="middle">P</text>`;
+    s+=`<text x="115" y="14" fill="#b7b7c2" font-size="8" text-anchor="middle">bosonic: oscillator + parity/quadrature measurement</text>`;
+    s+=`<text x="115" y="${y+18}" fill="#7a7a86" font-size="7" text-anchor="middle">photon loss accumulates between checks</text>`;
+  }
+  s+=`<text x="${x1}" y="14" fill="#555" font-size="7" text-anchor="end">time →</text>`;
+  svg.innerHTML=s;
+}
+
+async function run(){
+  if(samplerRunning){samplerStop=true;await new Promise(r=>setTimeout(r,80));samplerStop=false;}
+  samplerRunning=true;
+
+  const qk=document.getElementById('qubit').value, hk=document.getElementById('host').value,
+        dk=document.getElementById('dop').value, ck=document.getElementById('code').value,
+        d=parseInt(document.getElementById('dist').value)||5,
+        target=parseFloat(document.getElementById('target').value)||0.005,
+        l2='none';
+  const opts={
+    tempChip:15,
+    freq:parseFloat(document.getElementById('qubit_freq').value)||(QUB[qk]?QUB[qk].freq:5),
+    hemt:4,
+    filter:100,
+    layer2:l2,
+    gate:'standard_cz',
+    weight:parseInt(document.getElementById('czweight').value)||4,
+    geom:'planar_std',
+    substrate:document.getElementById('substrate').value,
+    hostVol:parseFloat(document.getElementById('hostVol').value)||1000,
+    hostSA:parseFloat(document.getElementById('hostSA').value)||100000,
+  };
+
+  const {nodes}=qecNodes(ck,d);
+  const N=nodes.length;
+
+  // ── LIVE GIBBS SAMPLER ──
+  // Each iteration: flip a random subset of doping sites using Gibbs acceptance.
+  // β = inverse temperature: colder chip → sharper Gibbs → greedier convergence.
+  const β = 12000 / Math.max(opts.tempChip,1);
+  let mask = new Uint8Array(N);
+  // seed from the user's manual doping if they placed any, else ~40% random
+  if(window._dopeMask && window._dopeMask.length===N && window._dopeMask.some(v=>v)) mask.set(window._dopeMask);
+  else for(let i=0;i<N;i++) mask[i]=Math.random()<0.4?1:0;
+  let bestMask=mask.slice(), bestScore=0;
+  const ITERS=60;
+
+  // draw QEC lattice (static — only the recommender builds live)
+  drawQEC('qec_svg',ck,d,'wait');
+  document.getElementById('qec_tag').textContent=`QEC: ${QEC[ck].label} d=${d}`;
+
+  for(let it=0;it<ITERS;it++){
+    if(samplerStop) break;
+
+    // flip a random node with Gibbs acceptance
+    const nFlips=Math.max(1,Math.floor(N*0.15));
+    for(let f=0;f<nFlips;f++){
+      const i=Math.floor(Math.random()*N);
+      let cnt=0;for(let _i=0;_i<N;_i++)cnt+=mask[_i];const dopFrac=cnt/N;
+      const newFrac=(mask[i]?dopFrac-1/N:dopFrac+1/N);
+      const {score:sOld}=configScore(dopFrac,hk,dk,ck,opts);
+      const {score:sNew}=configScore(newFrac,hk,dk,ck,opts);
+      const dE=sOld-sNew;                       // energy = -score
+      if(dE<0 || Math.random()<Math.exp(-β*dE)) mask[i]=1-mask[i];
+    }
+
+    let cnt=0;for(let _i=0;_i<N;_i++)cnt+=mask[_i];const dopFrac=cnt/N;
+    const {score,err,T1}=configScore(dopFrac,hk,dk,ck,opts);
+    if(score>bestScore){bestScore=score;bestMask=mask.slice();}
+
+    // draw the live frame
+    drawSamplerFrame('sampler_svg',nodes,mask,hk,dk,score,bestScore);
+    // update sampler stats
+    const pct=Math.round(dopFrac*100);
+    const _sup=(DOP[dk]&&typeof DOP[dk].sup==='number')?DOP[dk].sup:0;
+    const dG=MAT[hk].Gf + (_sup>0?-8*_sup:-_sup*40)*dopFrac*(1-dopFrac)*100;
+    document.getElementById('sampler_iter').textContent=`iter ${it+1}/${ITERS}`;
+    document.getElementById('sampler_bar').style.width=Math.max(0,Math.min(100,(-dG/2000)*100))+'%';
+    document.getElementById('sampler_stats').textContent=
+      `doping ${pct}% · err ${(err*100).toFixed(2)}% · T1≈${T1.toFixed(0)}μs · ΔG ${dG.toFixed(0)} kJ/mol`;
+
+    // yield to browser every frame
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  // ── FINAL: evaluate with best doping config → verdict ──
+  const bestDopFrac=bestMask.reduce((a,b)=>a+b,0)/N;
+  const e=evaluate(qk,hk,dk,ck,d,opts);
+  const tier=tierOf(e,target);
+
+  // draw final best config in sampler (glowing)
+  window._dopeMask=bestMask.slice();
+  drawSamplerFrame('sampler_svg',nodes,bestMask,hk,dk,bestScore,bestScore);
+  document.getElementById('sampler_iter').textContent=`✓ converged`;
+  const _supF=(DOP[dk]&&typeof DOP[dk].sup==='number')?DOP[dk].sup:0;
+  const bestG=MAT[hk].Gf + (_supF>0?-8*_supF:-_supF*40)*bestDopFrac*(1-bestDopFrac)*100;
+  document.getElementById('sampler_bar').style.width=Math.max(0,Math.min(100,(-bestG/2000)*100))+'%';
+  document.getElementById('sampler_stats').textContent=
+    `optimal: ${Math.round(bestDopFrac*100)}% doped · ΔG ${bestG.toFixed(0)} kJ/mol (${bestG<-1000?'very stable':bestG<-400?'stable':'marginal'})`;
+
+  // update material lattice with best config color
+  drawMaterial('mat_svg',hk,dk,l2,tier,ck,d,bestMask);
+  document.getElementById('mat_tag').textContent=`Material: ${MAT[hk].label}${dk!=='none'?' + '+DOP[dk].label:''}`;
+
+  // update QEC lattice with verdict color
+  drawQEC('qec_svg',ck,d,tier);
+
+  // ── VERDICT ──
+  const v=document.getElementById('verdict'), vs=document.getElementById('vstats');
+  const cls=tier==='PASS'?'pass':tier==='MODERATE'?'mod':'fail';
+  v.className='verdict-big '+cls; v.textContent=tier+(tier==='PASS'?' ✓':tier==='MODERATE'?' ~':' ✗');
+  const pLfinal = e.pL_gnn!=null ? e.pL_gnn : e.pL;
+  const thSym=e.below?'pv':'fv', tSym=(pLfinal<target)?'pv':'fv';
+  let reason='';
+  if(!e.compatible) reason=`<span class="fv">✗ ${QUB[qk].label} (η=${QUB[qk].eta}) incompatible with ${QEC[ck].label} (needs ${QEC[ck].bias} bias)</span><br/>`;
+  vs.innerHTML=reason;
+
+  // score chart (score bar)
+  const scverd=document.getElementById('score_verdict');
+  if(scverd){const col=tier==='PASS'?'var(--green)':tier==='MODERATE'?'var(--amber)':'var(--red)';scverd.textContent=tier+(tier==='PASS'?' ✓':tier==='MODERATE'?' ~':' ✗');scverd.style.color=col;}
+
+  // recommendation
+  const rec=document.getElementById('rec');
+  if(tier==='PASS'){rec.style.display='none';}
+  else{
+    const r=recommend(qk,hk,dk,ck,d,target);
+    const userShape=QEC[ck].shape;
+    if(r){
+      rec.style.display='block';
+      const _rt=document.getElementById('rec_title');
+      if(_rt) _rt.innerHTML='⚙ building a QEC code that WILL pass…';
+      await drawOverlayLive('rec_svg',r.hk,r.dk,ck,r.dist);
+      if(_rt) _rt.innerHTML='✓ new QEC code — this one passes:';
+      const kept=[],opt=[];
+      (LOCK.qubit?kept:opt).push('qubit');(LOCK.host?kept:opt).push('material');
+      (LOCK.dop?kept:opt).push('dopant');(LOCK.code?kept:opt).push('code');(LOCK.dist?kept:opt).push('distance');
+      const synthName=`${QEC[ck].label.split(' ')[0]}-tailored-η${QUB[qk].eta}-d${r.dist}`;
+      document.getElementById('rec_detail').innerHTML=
+        `<b>${synthName}</b> <span style="color:var(--text3)">(${userShape} geometry)</span><br/>
+         ${MAT[r.hk].label} + ${DOP[r.dk].label} · d=${r.dist}<br/>
+         ${r.tailorPct>0?`<span style="color:var(--purple)">bias-tailored ${r.tailorPct}% → threshold lifted to ${(r.synthTh*100).toFixed(2)}%</span><br/>`:''}
+         p_L=${r.pL.toExponential(1)} ✓ · T1=${r.T1.toFixed(0)}μs · ΔGf=${r.Gf.toFixed(0)}<br/>
+         <span style="color:var(--text3)">kept ${kept.join(',')||'-'}, optimized ${opt.join(',')||'-'}</span>`;
+    }else{
+      rec.style.display='block';
+      const _rt=document.getElementById('rec_title');
+      if(_rt) _rt.innerHTML='⚙ searching for a QEC code that passes…';
+      await drawOverlayLive('rec_svg',hk,dk,ck,d);
+      if(_rt) _rt.innerHTML='⚠ no passing code with current locks:';
+      document.getElementById('rec_detail').innerHTML=`<span style="color:var(--amber)">Even bias-tailored ${userShape}-geometry can't reach target. ${userShape==='triangular'?'Triangular codes need biased qubit — unlock qubit type.':'Unlock material or relax target.'}</span>`;
+    }
+  }
+
+  // doping-optimizer predicted properties
+  const _pp=document.getElementById('sampler_props');
+  if(_pp){
+    const GM=GEOM[e.geom]||GEOM.planar_std;
+    const SB=SUBSTRATE[e.substrate]||SUBSTRATE.sapphire;
+    const fmt=x=> x>=1e4? x.toExponential(1) : x.toFixed(0);
+    // host oxide loss multiplier note
+    const ho=document.getElementById('host_t1t2');
+    if(ho) ho.innerHTML='T₁ '+e.T1.toFixed(0)+'μs · T₂ '+e.T2.toFixed(0)+'μs · oxide loss ×'+e.lossMult.toFixed(2)+(e.lossMult>1.01?' (↓T₁)':e.lossMult<0.99?' (↑T₁)':'');
+    // materials readout — plain decimals (no scientific notation)
+    const mr=document.getElementById('mat_readout');
+    if(mr){
+      const dec=x=>Number(x).toLocaleString('en-US',{maximumFractionDigits:1});
+      const hv=parseFloat(document.getElementById('hostVol').value)||1000, hs=parseFloat(document.getElementById('hostSA').value)||100000;
+      const dpct=((DOP[dk]&&DOP[dk].pct)||0)/100;
+      mr.innerHTML=
+        'T₁ = <b>'+dec(e.T1)+'</b> μs · T₂ = <b>'+dec(e.T2)+'</b> μs · TLS = <b>'+dec(MAT[hk].TLS)+'</b><br>'+
+        'Host ('+MAT[hk].label+') — vol <b>'+dec(hv)+'</b> μm³ · SA <b>'+dec(hs)+'</b> μm²<br>'+
+        'Substrate ('+SB.label+') — vol <b>'+dec(SB.vol)+'</b> μm³ · SA <b>'+dec(SB.sa)+'</b> μm²<br>'+
+        'Dopant ('+(DOP[dk]?DOP[dk].label:'none')+') — vol <b>'+dec(hv*dpct)+'</b> μm³ · SA <b>'+dec(hs*dpct)+'</b> μm²';
+    }
+    if(_pp) _pp.innerHTML='';
+  }
+  const _sw=document.getElementById('synwin_cap');
+  if(_sw) _sw.innerHTML='';
+  renderSimBench(tier,pLfinal);
+  samplerRunning=false;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// JOINT STACK SEARCH (QUBO) — the search layer over the 14.2B config space.
+// PINN/physics = evaluator (scores one stack). QUBO = search (finds the best).
+// Greedy = optimize layers independently (code locked to surface under
+// idealized noise, then hardware tuned) — the status-quo baseline the paper
+// argues against. Joint = simulated annealing (the classical QUBO/Ising
+// solver) over all layers together → finds the material↔code synergy greedy
+// structurally misses (Claim 2: non-separability).
+// ════════════════════════════════════════════════════════════════════
+function physQubits(ck,d){
+  if(ck==='bb_gross') return Math.round(288*Math.max(1,d/12));
+  if(QEC[ck]&&QEC[ck].shape==='triangular') return Math.round(1.5*d*d);
+  return 2*d*d-1; }
+const QPOOL={
+  qk:Object.keys(QUB), sub:Object.keys(SUBSTRATE),
+  hk:['tantalum_cap','tantalum_film','aluminum_oxide_ald','niobium_film','niobium_nitride'],
+  geom:Object.keys(GEOM), dk:Object.keys(DOP),
+  ck:['surface','xzzx','heavy_hex','color_666','bb_gross'].filter(c=>QEC[c]),
+  d:[3,5,7,9,11,13,15,17,19,21], gate:Object.keys(GATES) };
+function qCost(cfg,target){
+  const e=evaluate(cfg.qk,cfg.hk,cfg.dk,cfg.ck,cfg.d,{geom:cfg.geom,substrate:cfg.sub,gate:cfg.gate,weight:codeWeight(cfg.ck),freq:QUB[cfg.qk].freq});
+  const pL=e.pL_gnn!=null?e.pL_gnn:e.pL, n=physQubits(cfg.ck,cfg.d);
+  const pass=e.below&&e.compatible&&pL<=target;
+  const fail=Math.max(0,Math.log10((pL||1)/target))+(e.compatible?0:5)+(e.below?0:5);
+  return {E:n+6000*fail, n, pL, pass}; }
+const _qr=a=>a[Math.floor(Math.random()*a.length)];
+function qRand(){const c={};for(const k in QPOOL)c[k]=_qr(QPOOL[k]);return c;}
+function qMut(c){const n={...c},k=_qr(Object.keys(QPOOL));n[k]=_qr(QPOOL[k]);return n;}
+function qGreedy(target){
+  let cfg={qk:'transmon',sub:'sapphire',hk:'tantalum_film',geom:'planar_std',dk:'none',ck:'surface',d:5,gate:'standard_cz'};
+  for(const k of ['sub','hk','geom','dk','d','gate']){let bo=cfg[k],be=qCost(cfg,target).E;
+    for(const o of QPOOL[k]){const t={...cfg};t[k]=o;const e=qCost(t,target).E;if(e<be){be=e;bo=o;}}cfg[k]=bo;}
+  return {cfg,c:qCost(cfg,target)}; }
+function qAnneal(target,iters,trace){
+  let cur=qRand(),cc=qCost(cur,target),best=cur,bc=cc;const T0=800,Te=0.3;
+  for(let i=0;i<iters;i++){const T=T0*Math.pow(Te/T0,i/iters);const nx=qMut(cur),nc=qCost(nx,target);
+    const dE=nc.E-cc.E;if(dE<0||Math.random()<Math.exp(-dE/T)){cur=nx;cc=nc;}
+    if(cc.E<bc.E){best=cur;bc=cc;} if(trace&&i%200===0)trace.push(bc.E);}
+  return {best,bc}; }
+async function runQUBO(){
+  const btn=document.getElementById('qubo_btn'), out=document.getElementById('qubo_out');
+  const target=parseFloat(document.getElementById('target').value)||0.005;
+  const tgt=Math.min(target,1e-6); document.getElementById('qubo_tgt').textContent=tgt.toExponential(0);
+  btn.disabled=true; btn.textContent='…searching'; out.innerHTML='running greedy + joint annealing…';
+  await new Promise(r=>setTimeout(r,20));
+  const g=qGreedy(tgt);
+  const trace=[]; let bestRun=null;
+  for(let r=0;r<12;r++){
+    const a=qAnneal(tgt,6000,trace);
+    if(!bestRun||(a.bc.pass&&!bestRun.bc.pass)||(a.bc.pass===bestRun.bc.pass&&a.bc.E<bestRun.bc.E))bestRun=a;
+    drawQTrace(trace); out.innerHTML='annealing restart '+(r+1)+'/12 — best so far '+bestRun.bc.n+' qubits';
+    await new Promise(r=>setTimeout(r,15));
+  }
+  const b=bestRun.best,bc=bestRun.bc;
+  const save = (g.c.pass&&bc.pass)? (g.c.n-bc.n) : null;
+  const lbl=c=>`${c.qk} · ${QEC[c.ck].label} d=${c.d} · ${MAT[c.hk].label} / ${SUBSTRATE[c.sub].label}`;
+  let claim;
+  if(bc.pass&&g.c.pass) claim=`<b style="color:var(--green)">joint saves ${save} qubits (${(100*save/g.c.n).toFixed(0)}%)</b> — greedy ${g.c.n} → joint ${bc.n}`;
+  else if(bc.pass&&!g.c.pass) claim=`<b style="color:var(--green)">joint PASSES at ${bc.n}q; greedy FAILS</b> — locked surface can't exploit bias`;
+  else claim=`greedy ${g.c.n} (${g.c.pass?'pass':'FAIL'}) · joint ${bc.n} (${bc.pass?'pass':'FAIL'})`;
+  out.innerHTML=
+    `<div style="color:var(--text3)">GREEDY (layers independent):</div>`+
+    `<div>${lbl(g.cfg)} → <b>${g.c.n} phys</b> · pL ${g.c.pL.toExponential(1)} ${g.c.pass?'✓':'✗'}</div>`+
+    `<div style="color:var(--text3);margin-top:4px">JOINT QUBO (all layers together):</div>`+
+    `<div>${lbl(b)} → <b style="color:var(--green)">${bc.n} phys</b> · pL ${bc.pL.toExponential(1)} ${bc.pass?'✓':'✗'}</div>`+
+    `<div style="margin-top:5px;padding-top:5px;border-top:1px solid var(--bg3)">Claim 2 (non-separability): ${claim}</div>`;
+  btn.disabled=false; btn.textContent='▶ search';
+}
+function drawQTrace(trace){
+  const svg=document.getElementById('qubo_trace'); if(!svg||!trace.length)return;
+  const W=260,H=46,pad=4; const mn=Math.min(...trace),mx=Math.max(...trace);
+  const sx=i=>pad+i/(Math.max(1,trace.length-1))*(W-2*pad);
+  const sy=v=>H-pad-(mx>mn?(v-mn)/(mx-mn):0.5)*(H-2*pad);
+  let p='M'+sx(0)+','+sy(trace[0]); for(let i=1;i<trace.length;i++)p+=' L'+sx(i)+','+sy(trace[i]);
+  svg.innerHTML=`<path d="${p}" fill="none" stroke="#76b900" stroke-width="1.3"/>`+
+    `<text x="${W-pad}" y="11" fill="#7a7a86" font-size="7" text-anchor="end">energy ↓ (best qubit cost)</text>`;
+}
+// ── Model-aware observable (③) — the physically meaningful output ──
+// Hubbard → site occupation ⟨nᵢ⟩ (charge density).  Spin/Ising → correlation
+// function ⟨O₀·Oᵣ⟩ vs distance (local one-site moments vanish by symmetry, so
+// the correlation is the meaningful, symmetry-respecting observable).
+function simProfile(sk, N, psi){
+  const sz=i=>expval([{coeff:1,flip:0,yqs:[],zqs:[i]}],N,psi);            // ⟨σᶻ_i⟩
+  const zz=(i,j)=>expval([{coeff:1,flip:0,yqs:[],zqs:[i,j]}],N,psi);     // ⟨σᶻ_iσᶻ_j⟩
+  if(sk==='hubbard'){
+    const L=Math.floor(N/2), bars=[];
+    for(let j=0;j<L;j++){ const nUp=(1-sz(j))/2, nDn=(1-sz(L+j))/2; bars.push({x:'s'+(j+1), v:nUp+nDn}); }  // ⟨nᵢ⟩=(1-⟨σᶻ⟩)/2
+    const docc=expval([{coeff:0.25,flip:0,yqs:[],zqs:[]},{coeff:-0.25,flip:0,yqs:[],zqs:[0]},
+                       {coeff:-0.25,flip:0,yqs:[],zqs:[L]},{coeff:0.25,flip:0,yqs:[],zqs:[0,L]}],N,psi);
+    return {title:'site occupation ⟨nᵢ⟩ (electrons/site)', bars, vmin:0, vmax:2, mixedVal:1, obs:'⟨n↑n↓⟩ = '+docc.toFixed(3)};
+  }
+  // spin models + transverse-field Ising → correlation function vs distance
+  const corr = sk==='ising' ? (r=>zz(0,r)) : (r=>expval(spinCorr(0,r),N,psi));
+  const bars=[]; for(let r=1;r<N;r++) bars.push({x:'r='+r, v:corr(r)});
+  const title = sk==='ising' ? 'correlation ⟨σᶻ₀σᶻᵣ⟩ vs distance' : 'spin correlation ⟨S₀·Sᵣ⟩ vs distance';
+  return {title, bars, vmin:-1, vmax:1, mixedVal:0, obs:''};
+}
+// ── UNIVERSAL sim graph (③): energy accuracy — works for every chem/mat/physics sim ──
+// Every simulation has a ground-state energy E₀. The one consistent question is:
+// how close does the chip's (noisy) energy land to the exact E₀?  Axis runs from
+// exact E₀ (the true answer) to 0 (fully decohered — no answer).
+function drawEnergyAccuracy(E0, Echip){
+  const svg=document.getElementById('sim_chart'); if(!svg) return; svg.style.display='block';
+  const W=260,H=72,x0=8,x1=W-8,y=40;
+  const span=Math.abs(E0)||1;
+  const tx=v=>x0+((v-E0)/(0-E0))*(x1-x0);            // E0→left, 0→right
+  const xExact=tx(E0), acc=0.02*span, xAcc=tx(E0+acc);
+  const hasChip=(Echip!=null && isFinite(Echip)); const xChip=hasChip?tx(Echip):xExact;
+  let s=`<text x="${x0}" y="13" fill="#b7b7c2" font-size="7">Energy accuracy — how close your chip gets to the true answer</text>`;
+  s+=`<rect x="${x0}" y="${y-3}" width="${x1-x0}" height="6" rx="3" fill="#1b1b22"/>`;
+  s+=`<rect x="${x0}" y="${y-3}" width="${Math.max(2,xAcc-x0).toFixed(1)}" height="6" rx="3" fill="#1D9E75" opacity="0.55"/>`;
+  // exact (true answer)
+  s+=`<line x1="${xExact.toFixed(1)}" y1="${y-9}" x2="${xExact.toFixed(1)}" y2="${y+9}" stroke="#1D9E75" stroke-width="2"/>`;
+  s+=`<text x="${(xExact+3).toFixed(1)}" y="${y-12}" fill="#1D9E75" font-size="6.5">exact E₀ = ${E0.toFixed(2)} (true)</text>`;
+  s+=`<text x="${x1}" y="${y-12}" fill="#7a7a86" font-size="6" text-anchor="end">0 = no answer</text>`;
+  if(hasChip){
+    const dE=Math.abs(Echip-E0), rel=100*dE/span;
+    const col=rel<2?'#1D9E75':rel<15?'#f5a524':'#e5484d';
+    s+=`<line x1="${xExact.toFixed(1)}" y1="${y+3}" x2="${xChip.toFixed(1)}" y2="${y+3}" stroke="${col}" stroke-width="1.4" stroke-dasharray="2 2"/>`;
+    s+=`<circle cx="${xChip.toFixed(1)}" cy="${y}" r="3.5" fill="${col}"/>`;
+    s+=`<text x="${xChip.toFixed(1)}" y="${y+19}" fill="${col}" font-size="6.5" text-anchor="middle">your chip = ${Echip.toFixed(2)}</text>`;
+    s+=`<text x="${x0}" y="${H-4}" fill="${col}" font-size="7">off by ${dE.toFixed(3)} (${rel.toFixed(0)}%) — ${rel<2?'✓ accurate':rel<15?'~ usable':'✗ too noisy'}</text>`;
+  } else {
+    s+=`<text x="${x0}" y="${H-4}" fill="#7a7a86" font-size="6.5">green = the exact answer · press Run to place your chip</text>`;
+  }
+  svg.innerHTML=s;
+}
+// ── Benchmarks: CPU vs GPU (xpyq) vs DGX Spark (⑤) ──
+function drawBench(){
+  const svg=document.getElementById('bench_chart'); if(!svg) return;
+  const ckEl=document.getElementById('code'),dEl=document.getElementById('dist'),nEl=document.getElementById('sim_n');
+  const ck=ckEl?ckEl.value:'surface', d=dEl?(parseInt(dEl.value)||5):5;
+  const N=nEl?Math.max(1,parseInt(nEl.value)||8):8;
+  const n=(typeof physQubits==='function')?physQubits(ck,d):2*d*d-1;
+  // \u2500\u2500 I-PINN \u2192 PINN \u2192 QUBO pipeline compute (illustrative GFLOP, scales with the lattice) \u2500\u2500
+  const ipinn=0.4*n, pinn=0.9*Math.pow(n,1.5), qubo=pinn*1e4;   // QUBO \u2248 ~1e4 PINN evals
+  const totalGF=ipinn+pinn+qubo;
+  // coupled working set the joint search must hold in memory (state vector 2^N), GB
+  const wsGB=Math.max(0.4, 16*Math.pow(2,Math.min(N,42))/1e9);
+  const sys=[
+    {nm:'CPU 32-core',   tf:2,   gb:256, col:'#5a6068'},
+    {nm:'GPU xpyq 5090',  tf:105, gb:32,  col:'#7a5bd0'},
+    {nm:'DGX Spark GB10', tf:250, gb:128, col:'#76b900'},
+  ];
+  const fmtT=x=> x<1?(x*1000).toFixed(0)+' ms': x<60?x.toFixed(1)+' s': x<3600?(x/60).toFixed(1)+' min': x<86400?(x/3600).toFixed(1)+' h':(x/86400).toFixed(1)+' d';
+  const fmtGF=g=> g<1000?g.toFixed(0)+' GF': g<1e6?(g/1000).toFixed(1)+' TF':(g/1e6).toFixed(1)+' PF';
+  const W=260,H=150,x0=92,bw=W-x0-60,rh=20,gp=18,mx=Math.log10(250);
+  let s=`<text x="0" y="9" fill="#7a7a86" font-size="6.6">I-PINN\u2192PINN\u2192QUBO \u00b7 d=${d} n=${n} \u00b7 ${fmtGF(totalGF)} \u00b7 set ${wsGB<1?(wsGB*1000).toFixed(0)+'MB':wsGB.toFixed(1)+'GB'}</text>`;
+  sys.forEach((sy,i)=>{const y=18+i*(rh+gp);
+    const fit=wsGB<=sy.gb;
+    let t=totalGF*1e9/(sy.tf*1e12*0.5);     // 50% sustained efficiency
+    if(!fit) t*=25;                          // thrash penalty when the set spills memory
+    s+=`<text x="0" y="${y+9}" fill="#c8c8d2" font-size="7.5">${sy.nm}</text>`;
+    s+=`<rect x="${x0}" y="${y}" width="${bw}" height="${rh}" rx="3" fill="#1b1b22"/>`;
+    s+=`<rect x="${x0}" y="${y}" width="${(bw*Math.log10(sy.tf)/mx).toFixed(1)}" height="${rh}" rx="3" fill="${sy.col}"/>`;
+    s+=`<text x="${x0+4}" y="${y+13}" fill="#fff" font-size="7.5">${sy.tf} TF</text>`;
+    s+=`<text x="${x0+bw+3}" y="${y+8}" fill="${fit?'#1D9E75':'#e5484d'}" font-size="7">${sy.gb}GB ${fit?'\u2713':'\u2717'}</text>`;
+    s+=`<text x="${x0+bw+3}" y="${y+17}" fill="#7a7a86" font-size="6.5">${fmtT(t)}</text>`;});
+  svg.innerHTML=s;
+}
+window.addEventListener('load',()=>{sync();drawBench();initGibbsLayers();});
+</script>
+
+</body>
+</html>
