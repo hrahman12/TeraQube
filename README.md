@@ -22,7 +22,7 @@ chosen Hamiltonian) so you can see how close a chip of this quality would land t
 the true answer.
 
 **Live site:** https://teraqub-ten.vercel.app/  
-**2-minute demo video:** https://teraqub-ten.vercel.app/teraqube_demo.mp4
+**2-minute demo video:** https://cdn.jsdelivr.net/gh/hrahman12/TeraQube@main/public/teraqube_demo.mp4
 
 ---
 
