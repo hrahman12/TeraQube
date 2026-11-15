@@ -21,6 +21,9 @@ and, in parallel, runs a small exact **quantum simulation** (ground state of a
 chosen Hamiltonian) so you can see how close a chip of this quality would land to
 the true answer.
 
+**Live site:** https://teraqub-ten.vercel.app/  
+**60-second explainer:** https://teraqub-ten.vercel.app/explainer.html (source: [`public/explainer.html`](public/explainer.html))
+
 ---
 
 ## Two surfaces

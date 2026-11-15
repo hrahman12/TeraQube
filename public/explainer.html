@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TeraQube: what we do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF3F8; --card:#F7FAFD; --fg:#12305A; --muted:#5A7798; --line:#B9CCE0; --grid:#DCE6F1;
+  --accent:#1E5BD8; --accent2:#0A8FB5; --good:#13945A; --bad:#D23B2F; --warn:#B7791F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D2441; --card:#11305A; --fg:#E8F1FA; --muted:#8FB0D0; --line:#3C6A98; --grid:#1A3E6B;
+    --accent:#9DB8FF; --accent2:#6FE0FF; --good:#6EE7A8; --bad:#FF7A6B; --warn:#FFD166;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D2441; --card:#11305A; --fg:#E8F1FA; --muted:#8FB0D0; --line:#3C6A98; --grid:#1A3E6B;
+  --accent:#9DB8FF; --accent2:#6FE0FF; --good:#6EE7A8; --bad:#FF7A6B; --warn:#FFD166;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:22px 18px 36px}
+.brand{font-family:'Barlow Semi Condensed','Barlow',system-ui,sans-serif;font-weight:600;font-size:15px;color:var(--muted);margin:0 0 6px}
+h1{font-family:'Barlow Semi Condensed','Barlow',system-ui,sans-serif;font-weight:700;font-size:clamp(28px,7vw,40px);line-height:1.05;margin:0 0 18px;letter-spacing:-.01em}
+.stage{position:relative;border:1.5px solid var(--line);border-radius:6px;background:var(--card);overflow:hidden}
+canvas{display:block;width:100%;height:auto;aspect-ratio:400/280;cursor:pointer}
+.progress{height:3px;background:var(--grid)}
+.progress i{display:block;height:100%;width:0;background:var(--accent2)}
+.scene{margin-top:16px;min-height:150px}
+.step{font-size:14px;color:var(--muted);margin:0 0 2px}
+h2{font-family:'Barlow Semi Condensed','Barlow',system-ui,sans-serif;font-weight:700;font-size:24px;margin:0 0 6px;line-height:1.15}
+.cap{margin:0;max-width:60ch;transition:opacity .25s}
+.controls{display:flex;align-items:center;gap:10px;margin-top:14px}
+button{font:inherit;color:var(--fg);background:var(--card);border:1.5px solid var(--line);border-radius:6px;min-width:44px;height:44px;padding:0 14px;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+button.play{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
+.dots{display:flex;gap:6px;margin-left:auto}
+.dots button{min-width:0;width:12px;height:12px;padding:0;border-radius:50%;background:var(--grid);border:none}
+.dots button[aria-current="true"]{background:var(--accent2)}
+.note{margin-top:22px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="brand">TeraQube / ArQiteQ</p>
+  <h1>Benchmark the blueprint, not the machine.</h1>
+
+  <div class="stage">
+    <canvas id="cv" aria-label="Animated explainer"></canvas>
+    <div class="progress"><i id="bar"></i></div>
+  </div>
+
+  <div class="scene">
+    <p class="step" id="step"></p>
+    <h2 id="title"></h2>
+    <p class="cap" id="cap"></p>
+  </div>
+
+  <div class="controls">
+    <button id="prev" aria-label="Previous step">‹</button>
+    <button id="play" class="play" aria-label="Pause">Pause</button>
+    <button id="next" aria-label="Next step">›</button>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <p class="note">Illustrative animation. Numbers and designs shown are for explanation, not measured results.</p>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const W=400,H=280;
+let C={}, BA=1;
+function readColors(){const s=getComputedStyle(document.documentElement);['bg','card','fg','muted','line','grid','accent','accent2','good','bad','warn'].forEach(k=>C[k]=s.getPropertyValue('--'+k).trim());}
+readColors();
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors)}catch(e){}
+
+let lastW=0;
+function resize(){const w=cv.clientWidth;if(w===lastW)return;lastW=w;const d=window.devicePixelRatio||1;cv.width=Math.round(w*d);cv.height=Math.round(w*H/W*d);}
+
+/* helpers */
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const ease=x=>{x=clamp(x);return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2};
+const lerp=(a,b,k)=>a+(b-a)*k;
+function hash(n){n=n|0;n=(n^61)^(n>>>16);n=n+(n<<3);n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);n=n^(n>>>15);return (n>>>0)/4294967296}
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const FONT="'Barlow',system-ui,sans-serif";
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function box(x,y,w,h,r,fill,stroke,al=1,lw=1.5){ctx.globalAlpha=BA*al;rr(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}ctx.globalAlpha=1;}
+function txt(s,x,y,o={}){ctx.font=`${o.w||500} ${o.s||12}px ${FONT}`;ctx.fillStyle=o.c||C.fg;ctx.textAlign=o.a||'center';ctx.textBaseline='middle';ctx.globalAlpha=BA*(o.al??1);ctx.fillText(s,x,y);ctx.globalAlpha=1;}
+function dot(x,y,r,col,al=1){ctx.globalAlpha=BA*al;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+function ring(x,y,r,col,lw=2,al=1){ctx.globalAlpha=BA*al;ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+function head(x,y,a,col,al=1){ctx.globalAlpha=BA*al;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-8*Math.cos(a-.45),y-8*Math.sin(a-.45));ctx.lineTo(x-8*Math.cos(a+.45),y-8*Math.sin(a+.45));ctx.closePath();ctx.fill();ctx.globalAlpha=1;}
+function arrow(x1,y1,x2,y2,col,al=1){ctx.globalAlpha=BA*al;ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.globalAlpha=1;head(x2,y2,Math.atan2(y2-y1,x2-x1),col,al);}
+function grid(){ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.beginPath();for(let x=0;x<=W;x+=20){ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H);}for(let y=0;y<=H;y+=20){ctx.moveTo(0,y+.5);ctx.lineTo(W,y+.5);}ctx.stroke();}
+
+/* ---------- Scene 0: the problem ---------- */
+function s0(t){
+  const y=110,bw=96,bh=70;
+  const B=[{x:60,l:'Design',i:'📐'},{x:200,l:'Fabricate',i:'🏭'},{x:340,l:'Test',i:'🔬'}];
+  B.forEach((b,k)=>{const ap=ease(seg(t,k*.3,k*.3+.6));const fail=k===2&&t>6;
+    box(b.x-bw/2,y-bh/2,bw,bh,8,C.card,fail?C.bad:C.line,ap,fail?2.5:1.5);
+    txt(b.i,b.x,y-10,{s:20,al:ap});txt(b.l,b.x,y+18,{s:13,w:600,al:ap});});
+  arrow(110,y,148,y,C.muted,seg(t,.8,1.2));arrow(250,y,288,y,C.muted,seg(t,.8,1.2));
+  let tx=null;
+  if(t>1.2&&t<2.2)tx=lerp(60,200,ease(seg(t,1.2,2.2)));else if(t>=2.2&&t<5)tx=200;else if(t>=5&&t<6)tx=lerp(200,340,ease(seg(t,5,6)));else if(t>=6)tx=340;
+  if(tx!==null){dot(tx,y-50,7,t>6?C.bad:C.accent2);txt('your chip',tx,y-66,{s:10,c:C.muted});}
+  const pa=seg(t,2.2,2.8);
+  box(152,158,96,8,4,C.grid,null,pa);box(152,158,96*seg(t,2.2,5),8,4,C.accent2,null,pa);
+  txt('months of work, $$$',200,180,{s:11,c:C.muted,al:pa});
+  txt('✗ misses its error target',340,165,{s:11,w:600,c:C.bad,al:seg(t,6.2,6.7)});
+  const ca=seg(t,7,7.6);
+  if(ca>0){ctx.globalAlpha=BA*ca;ctx.strokeStyle=C.bad;ctx.lineWidth=1.8;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(330,182);ctx.quadraticCurveTo(200,290,66,152);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+    head(66,152,Math.atan2(152-290,66-200),C.bad,ca);txt('start over',200,250,{s:12,w:600,c:C.bad,al:ca});}
+}
+
+/* ---------- Scene 1: qubits are fragile ---------- */
+function s1(t){
+  const cx=200,cy=135,sp=38,g=ease(seg(t,4,5.5));
+  for(let i=0;i<9;i++){const gx=(i%3-1)*sp,gy=(Math.floor(i/3)-1)*sp;
+    const x=cx+gx*(1-.45*g),y=cy+gy*(1-.45*g);
+    const err=Math.sin(t*(3+hash(i+1)*4)+hash(i+7)*10)>.82;
+    const col=err?C.bad:C.accent2;
+    dot(x,y,err?12:10,col,.22);dot(x,y,6,col);}
+  txt('9 physical qubits, each one glitchy',cx,38,{s:13,w:600,c:C.muted,al:1-g});
+  txt('red flash = an error',cx,250,{s:11,c:C.bad,al:(1-g)*seg(t,.8,1.4)});
+  if(g>0){const p=.75+.25*Math.sin(t*3);ring(cx,cy,lerp(95,58,g),C.good,3,g*p);
+    txt('= 1 logical qubit you can trust',cx,38,{s:13,w:600,c:C.good,al:g});
+    txt('errors get caught and fixed ✓',cx,250,{s:12,c:C.good,al:seg(t,6.2,6.9)});}
+}
+
+/* ---------- Scene 2: platforms ---------- */
+function squig(x1,y1,x2,y2,col){const n=30,dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),nx=-dy/L,ny=dx/L;ctx.globalAlpha=BA;ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();for(let k=0;k<=n;k++){const u=k/n,o=Math.sin(u*Math.PI*8)*3;const x=x1+dx*u+nx*o,y=y1+dy*u+ny*o;k?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.globalAlpha=1;}
+function s2(t){
+  const P=[{x:72,l:'Superconducting',f:'noise and crosstalk'},{x:200,l:'Photonic (light)',f:'light gets lost'},{x:328,l:'Topological',f:'physics still being proven'}];
+  P.forEach((p,k)=>{
+    BA=ease(seg(t,k*1.2,k*1.2+.7));
+    box(p.x-58,34,116,140,8,C.card,C.line);
+    if(k===0){const q=[[-22,-22],[22,-22],[-22,22],[22,22]];
+      squig(p.x-14,82,p.x+14,82,C.muted);squig(p.x-14,126,p.x+14,126,C.muted);squig(p.x-22,90,p.x-22,118,C.muted);squig(p.x+22,90,p.x+22,118,C.muted);
+      q.forEach((d,i)=>{const e=Math.sin(t*(4+i)+i*3)>.85;box(p.x+d[0]-8,104+d[1]-8,16,16,3,e?C.bad:C.accent2,null);});}
+    if(k===1){const x0=p.x-46,x1=p.x+46;const yy=(x,s)=>104+s*(14-11*Math.exp(-Math.pow((x-p.x)/14,2)));
+      [-1,1].forEach(s=>{ctx.globalAlpha=BA;ctx.strokeStyle=C.muted;ctx.lineWidth=2;ctx.beginPath();for(let x=x0;x<=x1;x+=2){x===x0?ctx.moveTo(x,yy(x,s)):ctx.lineTo(x,yy(x,s));}ctx.stroke();ctx.globalAlpha=1;});
+      for(let j=0;j<4;j++){const u=((t*0.5+j*.25)%1);const x=x0+u*92;const s=j%2?1:-1;const a=1-.75*u;dot(x,yy(x,s),6,C.accent,.25*a);dot(x,yy(x,s),3,C.accent,a);}}
+    if(k===2){const x0=p.x-46;[0,1].forEach(s=>{ctx.globalAlpha=BA;ctx.strokeStyle=s?C.warn:C.accent;ctx.lineWidth=2.5;ctx.beginPath();for(let i=0;i<=46;i++){const x=x0+i*2,u=i/46*Math.PI*3+t*1.5;const y=104+(s?-1:1)*18*Math.sin(u);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.globalAlpha=1;});}
+    txt(p.l,p.x,192,{s:12,w:600});txt(p.f,p.x,210,{s:10.5,c:C.muted});
+  });
+  BA=1;
+  txt('Newer platforms have almost no design-checking tools',200,250,{s:12.5,w:600,c:C.warn,al:seg(t,4.5,5.2)});
+}
+
+/* ---------- Scene 3: the scout (p-bits) ---------- */
+const DOTS=(()=>{const r=rng(42),a=[];for(let i=0;i<260;i++)a.push({x:30+r()*340,y:84+r()*138,s:r(),ph:r()*6});return a;})();
+function s3(t){
+  const flipping=t<8.5;
+  for(let i=0;i<16;i++){const x=24+i*22;const v=hash(i*131+Math.floor((flipping?t:8.5)*9+hash(i)*10))>.5;
+    box(x,24,18,22,3,v?C.accent:C.card,C.line);txt(v?'1':'0',x+9,35,{s:11,w:600,c:v?C.card:C.muted});}
+  txt('p-bits: smart coins that flip to explore options',200,62,{s:11,c:C.muted});
+  const thr=.97*ease(seg(t,1.5,8));let kept=0;
+  DOTS.forEach((d,i)=>{const alive=d.s>=thr;const jx=alive&&t<8.3?Math.sin(t*3+d.ph)*.9:0;
+    if(alive){kept++;if(d.s>.97&&t>8){dot(d.x,d.y,7,C.good,.25);dot(d.x+jx,d.y,3.2,C.good);}else dot(d.x+jx,d.y,2.6,C.accent2);}
+    else dot(d.x,d.y,1.8,C.muted,clamp(1-(thr-d.s)*14,.15,1));});
+  const n=Math.floor(ease(seg(t,.3,8))*10000);
+  txt(`${n.toLocaleString()} designs explored, ${kept} kept`,200,250,{s:12.5,w:600,c:t>8?C.good:C.fg});
+}
+
+/* ---------- Scene 4: the inspector ---------- */
+function s4(t){
+  const X=[60,130,200,270,340],V=[.82,.58,.30,.66,.47],TG=.40,base=225,mh=130;
+  txt('predicted error rate (lower is better)',200,90,{s:11,c:C.muted});
+  const ty=base-TG*mh;ctx.strokeStyle=C.good;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(20,ty);ctx.lineTo(380,ty);ctx.stroke();ctx.setLineDash([]);
+  txt('target',22,ty-9,{s:10,c:C.good,a:'left'});
+  ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(20,base+.5);ctx.lineTo(380,base+.5);ctx.stroke();
+  X.forEach((x,k)=>{const ts=.6+k*1.4;const win=k===2&&t>7.8;
+    box(x-17,38,34,34,4,C.card,win?C.good:C.line,1,win?2.5:1.5);
+    for(let p=0;p<3;p++){ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-10+p*10,38);ctx.lineTo(x-10+p*10,33);ctx.moveTo(x-10+p*10,72);ctx.lineTo(x-10+p*10,77);ctx.stroke();}
+    txt('ABCDE'[k],x,55,{s:13,w:600});
+    if(t>ts&&t<ts+1.1){const u=seg(t,ts,ts+1.1);box(x-21,34+u*40,42,4,2,C.accent,null,.8);}
+    const g=ease(seg(t,ts+.3,ts+1.1));if(g>0){const done=t>ts+1.1;const pass=V[k]<TG;const h=V[k]*mh*g;
+      box(x-13,base-h,26,h,3,done?(pass?C.good:C.bad):C.muted,null,done?1:.6);
+      if(done)txt(pass?'✓':'✗',x,base-h-10,{s:13,w:600,c:pass?C.good:C.bad});}
+  });
+  txt('Only design C meets the target',200,250,{s:12.5,w:600,c:C.good,al:seg(t,7.8,8.4)});
+}
+
+/* ---------- Scene 5: the certificate ---------- */
+function s5(t){
+  const cy=lerp(320,140,ease(seg(t,0,.9)));
+  box(60,cy-95,280,190,8,C.card,C.accent2,1,2);
+  txt('QEC design certificate',200,cy-72,{s:15,w:600});
+  txt('Design C, photonic chip',200,cy-54,{s:11,c:C.muted});
+  const L=[['✓','Meets logical error target',C.good],['✓','Best-fit error-correcting code chosen',C.good],['!','Weak spot flagged: coupler loss',C.warn],['✓','Cleared to fabricate',C.good]];
+  L.forEach((l,i)=>{const a=seg(t,1.2+i*.8,1.6+i*.8);const y=cy-25+i*25;dot(84,y,8,l[2],.18*a);txt(l[0],84,y,{s:11,w:600,c:l[2],al:a});txt(l[1],100,y,{s:12,a:'left',al:a});});
+  const sa=seg(t,5,5.4);if(sa>0){const sc=lerp(1.8,1,ease(sa));ctx.save();ctx.translate(290,cy+72);ctx.rotate(-.18);ctx.scale(sc,sc);
+    BA=sa;box(-42,-14,84,28,4,null,C.good,1,2.5);txt('PASSED',0,1,{s:14,w:600,c:C.good});BA=1;ctx.restore();}
+  txt('→ build it with confidence',200,258,{s:12.5,w:600,c:C.accent2,al:seg(t,6.5,7.2)});
+}
+
+/* ---------- Scene 6: the payoff ---------- */
+function bars(y,segs,rev){const sc=340/258;ctx.save();ctx.beginPath();ctx.rect(30,y-2,Math.max(0,rev),32);ctx.clip();let x=30;
+  segs.forEach(s=>{const w=s[1]*sc;box(x+1,y,w-2,26,4,s[2],null);txt(s[0],x+w/2,y+13,{s:10.5,w:600,c:C.card});x+=w;});ctx.restore();return x;}
+function s6(t){
+  const rev=Math.max(0,(t-.5)*52);
+  txt('The old way',30,80,{s:13,w:600,a:'left'});
+  bars(92,[['Plan',24,C.accent2],['Fab',60,C.muted],['✗',18,C.bad],['Fab',60,C.muted],['✗',18,C.bad],['Fab',60,C.muted],['✓',18,C.good]],rev);
+  txt('With TeraQube',30,160,{s:13,w:600,a:'left'});
+  const end=bars(172,[['Plan',24,C.accent2],['Sim',30,C.accent],['Fab',60,C.muted],['✓',18,C.good]],rev);
+  const de=seg(t,4,4.5);txt('working chip',end+8,185,{s:11,w:600,c:C.good,a:'left',al:de});
+  const sa=seg(t,7,7.6);if(sa>0){ctx.globalAlpha=BA*sa;ctx.strokeStyle=C.accent2;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(end,140);ctx.lineTo(370,140);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+    txt('time and money saved',(end+370)/2,132,{s:11,w:600,c:C.accent2,al:sa});}
+  txt('Benchmark the blueprint, not the machine.',200,248,{s:14,w:600,c:C.fg,al:seg(t,8,8.7)});
+}
+
+const S=[
+ {d:9,f:s0,t:'The problem',c:'Building a quantum chip takes months and a lot of money. Teams often find out it can’t hit its error-correction goals only after it’s built, and then they start over.'},
+ {d:9,f:s1,t:'Why it’s hard',c:'Qubits make mistakes constantly. Quantum error correction (QEC) bundles many glitchy qubits into one reliable “logical” qubit, but only if the hardware underneath is good enough.'},
+ {d:9,f:s2,t:'Every chip fails differently',c:'Superconducting, photonic (light-based) and topological chips each break in their own way. The newer platforms barely have tools to check a design before building it.'},
+ {d:10,f:s3,t:'The scout',c:'Our engine uses p-bits, probabilistic bits that flip like smart coins, to explore thousands of possible designs fast and throw out the weak ones before any expensive simulation.'},
+ {d:10,f:s4,t:'The inspector',c:'The few promising designs get a full physics simulation, with materials, noise and error-correcting codes modeled together, to predict how each one will really perform.'},
+ {d:9,f:s5,t:'The answer',c:'The customer gets a clear verdict before fabrication: does it hit the target, which code fits best, and where the weak spots are.'},
+ {d:10,f:s6,t:'The payoff',c:'Fewer wasted fab cycles and a faster path to quantum computers that actually work.'}
+];
+
+const $=id=>document.getElementById(id);
+const dotsEl=$('dots');
+S.forEach((s,i)=>{const b=document.createElement('button');b.setAttribute('aria-label','Go to step '+(i+1));b.onclick=()=>go(i);dotsEl.appendChild(b);});
+let idx=0,el=0,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,last=performance.now();
+function ui(){$('step').textContent=`Step ${idx+1} of ${S.length}`;$('title').textContent=S[idx].t;$('cap').textContent=S[idx].c;
+  [...dotsEl.children].forEach((b,i)=>b.setAttribute('aria-current',i===idx?'true':'false'));
+  $('play').textContent=playing?'Pause':'Play';$('play').setAttribute('aria-label',playing?'Pause':'Play');}
+function go(i){idx=(i+S.length)%S.length;el=0;ui();}
+function toggle(){playing=!playing;if(playing&&el>=S[idx].d)go(idx+1);ui();}
+$('prev').onclick=()=>go(idx-1);$('next').onclick=()=>go(idx+1);$('play').onclick=toggle;cv.onclick=toggle;
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(idx+1);else if(e.key==='ArrowLeft')go(idx-1);});
+if(!playing)el=S[0].d;
+function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
+  if(playing){el+=dt;if(el>S[idx].d+.6)go(idx+1);}
+  resize();ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);ctx.clearRect(0,0,W,H);BA=1;grid();
+  S[idx].f(Math.min(el,S[idx].d));$('bar').style.width=(clamp(el/S[idx].d)*100)+'%';
+  requestAnimationFrame(frame);}
+ui();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
